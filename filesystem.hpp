@@ -50,6 +50,35 @@ inline bool isFileExists(const string dirname,const fdirnode *dir) {
  * return: folder node
 */
 
+string getFirst(const string path) {
+	string folder_part = "",finale = "/";
+	if (path=="/") return "/";
+	for (int i = 1; i < path.length(); i++) {
+		if (path[i]=='/') {
+			finale = finale + folder_part;
+			folder_part = "";
+		} else {
+			folder_part = folder_part + path[i];
+		}
+	}
+	return finale;
+}
+
+string getLast(const string path) {
+	string folder_part = "",finale = "/";
+	if (path=="/") return "/";
+	for (int i = 1; i < path.length(); i++) {
+		if (path[i]=='/') {
+			finale = finale + folder_part;
+			folder_part = "";
+		} else {
+			folder_part = folder_part + path[i];
+		}
+	}
+	return folder_part;
+}
+
+
 fdirnode* resolve(const string path,fdirnode *root) {
 	string folder_part = "";
 	fdirnode *curs;
@@ -180,6 +209,20 @@ string readFile(fdirnode *dir,const string file_name) {
 	return dir->files[file_name];
 }
 
+// actually we need to move file and copy file.
+// ! It'll override target if target exists!!
+int copyFile(fdirnode *source_dir,const string source_filename,fdirnode *dest_dir,const string dest_filename) {
+	if (!isFileExists(source_filename,source_dir)) return 0;
+	_proceedFile(dest_dir,dest_filename,readFile(source_dir,source_filename));
+	return 1;
+}
+
+int moveFile(fdirnode *source_dir,const string source_filename,fdirnode *dest_dir,const string dest_filename) {
+	if (!isFileExists(source_filename,source_dir)) return 0;
+	_proceedFile(dest_dir,dest_filename,readFile(source_dir,source_filename));
+	return rmFile(source_dir,source_filename);
+}
+
 // Also, we need to list files likes DIR or LS.
 #define LIST_DIR 1
 #define LIST_FILE 2
@@ -189,7 +232,7 @@ vector<string> listFile(fdirnode *rootdir,const int mode) {
 	if (mode&1) {
 		map<string,fdirnode*>::iterator i;
 		for (i = rootdir->subdir.begin(); i != rootdir->subdir.end(); i++) {
-			tresult.push_back(i->first);
+			tresult.push_back("[" + i->first + "]");
 		}
 	}
 	if (mode&2) {
@@ -202,6 +245,15 @@ vector<string> listFile(fdirnode *rootdir,const int mode) {
 }
 
 // At this moment, we need a "root" node.
+
+inline int copyFileA(fdirnode *root, const string source_path, const string source_filename, const string dest_path, const string dest_filename) {
+	return copyFile(resolve(source_path,root),source_filename,resolve(dest_path,root),dest_filename);
+}
+
+inline int moveFileA(fdirnode *root, const string source_path, const string source_filename, const string dest_path, const string dest_filename) {
+	return moveFile(resolve(source_path,root),source_filename,resolve(dest_path,root),dest_filename);
+}
+
 inline vector<string> listFileA(fdirnode *root,const string path,const int mode) {
 	return listFile(resolve(path,root),mode);
 }

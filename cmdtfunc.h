@@ -25,11 +25,7 @@ using namespace std;
 #define ERR_INVAILD_COLOR 2 
 #define ERR_INVAILD_COLOR_CHAR 3
 
-void err(string info,int errcode) {
-	cout<<info<<endl;
-	exit(errcode);
-	return;
-}
+#define err(info,retcode) cout << retcode << " " << info << endl
 
 WORD getColorByString(string s) {
 	char b=toupper(s[0]),f=toupper(s[1]);

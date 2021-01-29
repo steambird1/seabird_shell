@@ -33,24 +33,40 @@ string getl(void) {
 /*
 The commands will be add:
 
-echo	Echo a message.
-clear	Clear screen.
-errval	Ouput previous return value.
-ls		List folders and files. (-F for only folders, -f for only files.)
-put		Output a line to file. (-o for override)
-cat		View file.
-mv		Move file.
-cp		Copy file.
-rm		Remove file.
-cd		Switch 'current directory'.
+echo	Echo a message. (completed) 
+clear	Clear screen. (completed)
+errval	Ouput previous return value. (completed)
+ls		List folders and files. (-F for only folders, -f for only files.) (completed)
+
+put		Output a line to file. (-o for override) (completed)
+cat		View file. (completed)
+mv		Move file. (-o for override) (completed)
+md		Make directory. (completed)
+cp		Copy file. (-o for override) (completed) * Unlucky, 'cp', 'mv' and 'rm' only supports execute in same folder.
+rm		Remove file. (completed)
+------------------------------------
+Full path version:
+------------------------------------
+write => put (completed)
+type => cat
+move => mv
+mkdir => md
+copy => cp
+del => rm
+-END-
+rd		Remove directory. ! for some reason I can't complete it
+ren		Remove current directory. ! for some reason I can't complete it, neither...
+(What a great folder!)
+
+cd		Switch 'current directory'. (completed)
 color	Change command line output color.
-whoami	User information.
+whoami	User information. (completed)
 logout	Logout. (*)
 exit	Logout or logout elevated shell. (*)
 elev	Make elevated permission. (*)
 halt	Exit virtual shell. (*)
 reboot	Reboot virtual shell. (*)
-edit	A simple file editor.
+edit	A simple file editor. ? It's still in progress.
 */
 /*
 Editor commands:
@@ -66,39 +82,6 @@ save
 copy (new filename)
 close
 exit
-*/
-/*
-vector<string> _ereadup(string filename) {
-	vector<string> b;
-	string dat = readFileA(root,cdir,argv[1]), b = "";
-		for (int i = 0; i < dat.length(); i++) {
-			if (dat[i]=='\n') {
-				buf.push_back(b);
-				b = "";
-			} else {
-				b = b + dat[i];
-			}
-		}
-		if (b != "") buf.push_back(b);
-	return b;
-}*/
-// A work in progress.
-/*
-int editor(int argc, vector<string> argv) {
-	string fullname = "";
-	vector<string> buf;
-	vector<string> cmz;
-	if (argc > 1) {
-		fullname = cdir + argv[1];
-		buf = _ereadup(fullname);
-	}
-	do {
-		string cmd = getl();
-		if (cmd == "open") {
-			
-		}
-	} while (1);
-}
 */
 
 /*(continue)
@@ -127,11 +110,149 @@ int put(int argc, vector<string> argv) {
 	string dat = "", fn = argv[int(override)+1];
 	if ((!override) && isFileExistsA(root,cdir,fn)) dat = readFileA(root,cdir,fn);
 	if ((override&&argc>=4)||(argc>=3)) for (vector<string>::iterator i = argv.begin()+int(override)+2; i != argv.end(); i++) dat = dat + (*i) + " ";
+	dat = dat + "\n";
 	_proceedFile(resolve(cdir,root),fn,dat);
 	return !isFileExistsA(root,"/",fn);
 }
 
+int write(int argc, vector<string> argv) {
+	bool override = false;
+	if (argc >= 2 && argv[1] == "-o") override = true;
+	string dat = "", fn = getLast(argv[int(override)+1]),cdr = getFirst(argv[int(override)+1]);
+	if ((!override) && isFileExistsA(root,cdr,fn)) dat = readFileA(root,cdr,fn);
+	if ((override&&argc>=4)||(argc>=3)) for (vector<string>::iterator i = argv.begin()+int(override)+2; i != argv.end(); i++) dat = dat + (*i) + " ";
+	dat = dat + "\n";
+	_proceedFile(resolve(cdr,root),fn,dat);
+	return !isFileExistsA(root,"/",fn);
+}
 
+int type(int argc, vector<string> argv) {
+	if (argc < 2) return 1;
+	string cdr = getFirst(argv[1]), fn = getLast(argv[1]);
+	if (!isFileExistsA(root,cdr,fn)) {
+		cout << "Specified file does not exist" << endl;
+		return 2;
+	}
+	cout << readFileA(root,cdr,fn) << endl;
+	return 0;
+}
+
+int cat(int argc, vector<string> argv) {
+	if (argc < 2) return 1;
+	string fn = argv[1];
+	if (!isFileExistsA(root,cdir,fn)) {
+		cout << "Specified file does not exist" << endl;
+		return 2;
+	}
+	cout << readFileA(root,cdir,fn) << endl;
+	return 0;
+}
+
+int copy(int argc, vector<string> argv) {
+	if (argc < 3) {
+		cout << "Required parameter missing" << endl;
+		return 1;
+	}
+	bool override = false;
+	if (argc >= 2 && argv[1] == "-o") override = true;
+	string sc = argv[1+int(override)], dc = argv[2+int(override)];
+	string cdr1 = getFirst(sc), cdr2 = getFirst(dc), source = getLast(sc), dest = getLast(dc);
+	cout << cdr1 << "/" << source << " ; " << cdr2 << "/" << dest << endl;//testing
+	if (!isFileExistsA(root,cdr1,source)) {
+		cout << "Source file does not exist" << endl;
+		return 2;
+	}
+	if (isFileExistsA(root,cdr2,dest)&&(!override)) {
+		cout << "Target already exists (for override using '-o')" << endl;
+		return 3;
+	} 
+	copyFileA(root,cdr1,source,cdr2,dest);
+	return 0;
+}
+
+int cp(int argc, vector<string> argv) {
+	if (argc < 3) {
+		cout << "Required parameter missing" << endl;
+		return 1;
+	}
+	bool override = false;
+	if (argc >= 2 && argv[1] == "-o") override = true;
+	if (!isFileExistsA(root,cdir,argv[1+int(override)])) {
+		cout << "Source file does not exist" << endl;
+		return 2;
+	}
+	if (isFileExistsA(root,cdir,argv[2+int(override)])&&(!override)) {
+		cout << "Target already exists (for override using '-o')" << endl;
+		return 3;
+	} 
+	copyFileA(root,cdir,argv[1+int(override)],cdir,argv[2+int(override)]);
+	return 0;
+}
+
+int move(int argc, vector<string> argv) {
+	if (argc < 3) {
+		cout << "Required parameter missing" << endl;
+		return 1;
+	}
+	bool override = false;
+	if (argc >= 2 && argv[1] == "-o") override = true;
+	string sc = argv[1+int(override)], dc = argv[2+int(override)];
+	string cdr1 = getFirst(sc), cdr2 = getFirst(dc), source = getLast(sc), dest = getLast(dc);
+	if (!isFileExistsA(root,cdr1,source)) {
+		cout << "Source file does not exist" << endl;
+		return 2;
+	}
+	if (isFileExistsA(root,cdr2,dest)&&(!override)) {
+		cout << "Target already exists (for override using '-o')" << endl;
+		return 3;
+	} 
+	moveFileA(root,cdr1,source,cdr2,dest);
+	return 0;
+}
+
+int mv(int argc, vector<string> argv) {
+	if (argc < 3) {
+		cout << "Required parameter missing" << endl;
+		return 1;
+	}
+	bool override = false;
+	if (argc >= 2 && argv[1] == "-o") override = true;
+	if (!isFileExistsA(root,cdir,argv[1+int(override)])) {
+		cout << "Source file does not exist" << endl;
+		return 2;
+	}
+	if (isFileExistsA(root,cdir,argv[2+int(override)])&&(!override)) {
+		cout << "Target already exists (for override using '-o')" << endl;
+		return 3;
+	} 
+	moveFileA(root,cdir,argv[1+int(override)],cdir,argv[2+int(override)]);
+	return 0;
+}
+
+int del(int argc, vector<string> argv) {
+	if (argc < 2) {
+		cout << "Required parameter missing" << endl;
+		return 1;
+	}
+	string cdr = getFirst(argv[1]), fn = getLast(argv[1]);
+	if (!isFileExistsA(root,cdr,fn)) {
+		cout << "Source file does not exist" << endl;
+		return 2;
+	}
+	rmFileA(root,cdr,fn);
+}
+
+int rm(int argc, vector<string> argv) {
+	if (argc < 2) {
+		cout << "Required parameter missing" << endl;
+		return 1;
+	}
+	if (!isFileExistsA(root,cdir,argv[1])) {
+		cout << "Source file does not exist" << endl;
+		return 2;
+	}
+	rmFileA(root,cdir,argv[1]);
+}
 
 int _clear(int argc, vector<string> argv) {
 	return system("cls");
@@ -191,6 +312,61 @@ int ls(int argc, vector<string> argv) {
 	return 0;
 }
 
+int md(int argc, vector<string> argv) {
+	if (argc < 2) {
+		cout << "Required parameter missing" << endl;
+		return 2;
+	}
+	if (isSubdirExistsA(root,cdir,argv[1])) {
+		cout << "Directory already exists" << endl;
+		return 1;
+	}
+	createFolderA(root,cdir,argv[1]);
+	return 0;
+}
+
+int mkdir(int argc, vector<string> argv) {
+	if (argc < 2) {
+		cout << "Required parameter missing" << endl;
+		return 2;
+	}
+	string cdr = getFirst(argv[1]), fn = getLast(argv[1]);
+	if (isSubdirExistsA(root,cdr,fn)) {
+		cout << "Directory already exists" << endl;
+		return 1;
+	}
+	createFolderA(root,cdr,fn);
+	return 0;
+}
+
+int cd(int argc, vector<string> argv) {
+	if (argc < 2) {
+		cout << "Required parameter missing" << endl;
+		return 2;
+	}
+	if (argv[1]=="..") {
+		// turn to previous
+		cdir=getFirst(cdir);
+		return 0;
+	}
+	if (!isSubdirExistsA(root,cdir,argv[1])) {
+		cout << "Directory not exist" << endl;
+		return 1;
+	}
+	cdir = cdir + argv[1];
+	return 0;
+}
+
+int colors(int argc, vector<string> argv) {
+	if (argc < 2) {
+		cout << "Required parameter missing" << endl;
+		return 2;
+	}
+	setColor(argv[1]);
+	return 0;
+}
+
+
 void initalize(void) {
 	rootInit(root);
 	ac=getAccounts();
@@ -200,6 +376,19 @@ void initalize(void) {
 	f["errval"]=errvala;
 	f["ls"]=ls;
 	f["put"]=put;
+	f["write"]=write;
+	f["cat"]=cat; 
+	f["type"]=type;
+	f["cp"]=cp;
+	f["copy"]=copy;
+	f["mv"]=mv;
+	f["move"]=move;
+	f["rm"]=rm;
+	f["del"]=del;
+	f["md"]=md;
+	f["mkdir"]=mkdir;
+	f["cd"]=cd;
+	f["color"]=colors;
 }
 
 void login(void) {
@@ -276,12 +465,13 @@ int shell(void) {
 			continue;
 		}
 		errval = call_cmd(f,split_arg(cmd,true));
+		if (errval == -1) printf("Bad command\n");
 	}
 }
 
 int main() {
 	// debugging management
-	put(3,split_arg("put a.txt hi",true));
+	//put(3,split_arg("put a.txt hi",true));
 	// -end-
 	initz: initalize();
 	logz: login();
