@@ -7,6 +7,7 @@
 #include <cstdlib>
 #include <vector>
 #include <string>
+#include <time.h>
 using namespace std; 
 
 funcall f;
@@ -44,15 +45,17 @@ mv		Move file. (-o for override) (completed)
 md		Make directory. (completed)
 cp		Copy file. (-o for override) (completed) * Unlucky, 'cp', 'mv' and 'rm' only supports execute in same folder.
 rm		Remove file. (completed)
+edit	Call notepad to edit file saved in it. (I can only do this.) 
 ------------------------------------
 Full path version:
 ------------------------------------
-write => put (completed)
+write => put
 type => cat
 move => mv
 mkdir => md
 copy => cp
 del => rm
+edit => notepad
 -END-
 rd		Remove directory. ! for some reason I can't complete it
 ren		Remove current directory. ! for some reason I can't complete it, neither...
@@ -66,26 +69,12 @@ exit	Logout or logout elevated shell. (*)
 elev	Make elevated permission. (*)
 halt	Exit virtual shell. (*)
 reboot	Reboot virtual shell. (*)
-edit	A simple file editor. ? It's still in progress.
-*/
-/*
-Editor commands:
-open (filename)
-view [line]
-add (content)
-insert [line] (content) 
-modify [line] (content)
-delete [line]
-duplicate [source line] [target line]
-move [source line] [target line]
-save
-copy (new filename)
-close
-exit
+rand	Pick a random number. (you should specify lowercase and/or uppercase, or a really random if not specified.)
 */
 
 /*(continue)
 svt		Virtual shell file tools (share files between host and app).
+
 help	Show help message.
 
 The shell prompt like:
@@ -95,6 +84,139 @@ The shell prompt like:
 (*) means builtin command.
 You can add your command, too.
 */
+
+int _ran(void) {
+	static int seed = time(NULL);
+	srand(seed);
+	seed = rand();
+	return seed;
+}
+
+int _rhi(int hi) {
+	return _ran()%hi;
+}
+
+int _rlh(int low,int hi) {
+	return _ran()%(hi-low)+low;
+}
+
+int random(int argc, vector<string> argv) {
+	switch (argc) {
+		case 1:
+			cout << _ran() << endl;
+			break;
+		case 2:
+			cout << _rhi(atoi(argv[1].c_str())) << endl;
+			break;
+		case 3:
+			cout << _rlh(atoi(argv[1].c_str()),atoi(argv[2].c_str())) << endl;
+			break;
+	}
+	return 0;
+}
+
+string _getTemp(void) {
+	string s;
+	s = getenv("temp");
+	s = s + "\\sgshell_tempedit";
+	return s;
+}
+
+int editor(int argc, vector<string> argv) {
+	if (argc < 2) {
+		cout << "Required parameter missing" << endl;
+		return 1;
+	}
+	if (!isFileExistsA(root,cdir,argv[1])) {
+		cout << "Specified file not exist" << endl;
+		return 1;
+	}
+	FILE *f;
+	f = fopen(_getTemp().c_str(),"w+");
+	fprintf(f,"%s",readFileA(root,cdir,argv[1]).c_str());
+	fclose(f);
+	string scmd = "notepad ";
+	scmd = scmd + _getTemp();
+	system(scmd.c_str());
+	// after notepad, push changes:
+	string buf = "";
+	f = fopen(_getTemp().c_str(),"r");
+	while (!feof(f)) {
+		buf = buf + char(fgetc(f));
+	}
+	fclose(f);
+	modifyFileA(root,cdir,argv[1],buf);
+	return 0;
+}
+
+int notepad(int argc, vector<string> argv) {
+	string cdr = getFirst(argv[1]), arg1 = getLast(argv[1]);
+	if (argc < 2) {
+		cout << "Required parameter missing" << endl;
+		return 1;
+	}
+	if (!isFileExistsA(root,cdr,arg1)) {
+		cout << "Specified file not exist" << endl;
+		return 1;
+	}
+	FILE *f;
+	f = fopen(_getTemp().c_str(),"w+");
+	fprintf(f,"%s",readFileA(root,cdr,arg1).c_str());
+	fclose(f);
+	string scmd = "notepad ";
+	scmd = scmd + _getTemp();
+	system(scmd.c_str());
+	// after notepad, push changes:
+	string buf = "";
+	f = fopen(_getTemp().c_str(),"r");
+	while (!feof(f)) {
+		buf = buf + char(fgetc(f));
+	}
+	fclose(f);
+	modifyFileA(root,cdr,arg1,buf);
+	return 0;
+}
+
+int svt(int argc, vector<string> argv) {
+	// svt import [pos] [local filename]
+	// svt output [pos] [local filename]
+	// Use quotes for long path.
+	if (argc < 4) {
+		cout << "Required parameter missing" << endl;
+		return 1;
+	}
+	if (argv[1]=="import") {
+		if (isFileExistsA(root,cdir,argv[2])) {
+			cout << "Specified file already exists" << endl;
+			return 3;
+		}
+		string buf = "";
+		FILE *f;
+		f = fopen(argv[3].c_str(),"r");
+		while (!feof(f)) {
+			buf = buf + char(fgetc(f));
+		}
+		fclose(f);
+		if (buf=="") {
+			cout << "Specified file is empty" << endl;
+			return 4;
+		} 
+		createFileA(root,cdir,argv[2],buf);
+		return 0;
+	} else if (argv[1]=="output") {
+		if (!isFileExistsA(root,cdir,argv[2])) {
+			cout << "Specified file does not exist" << endl;
+		}
+		FILE *f;
+		f = fopen(argv[3].c_str(),"w+");
+		fprintf(f,"%s",readFileA(root,cdir,argv[2]).c_str());
+		fclose(f);
+		return 0;
+	} else {
+		cout << "Invaild operation" << endl;
+		return 2;
+	}
+}
 
 int echo(int argc, vector<string> argv) {
 	if (argc < 2) return 1;
@@ -389,6 +511,10 @@ void initalize(void) {
 	f["mkdir"]=mkdir;
 	f["cd"]=cd;
 	f["color"]=colors;
+	f["svt"]=svt;
+	f["edit"]=editor;
+	f["notepad"]=notepad;
+	f["rand"]=random;
 }
 
 void login(void) {
