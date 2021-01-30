@@ -207,19 +207,30 @@ int editor(int argc, vector<string> argv) {
 	}
 	FILE *f;
 	f = fopen(_getTemp().c_str(),"w+");
-	fprintf(f,"%s",readFileA(root,cdir,argv[1]).c_str());
+	string buf = readFileA(root,cdir,argv[1]);
+	int bytes = 0;
+	cout << "Byte proceed:           0";
+	for (int i = 0; i < buf.length(); i++) {
+		printf("\b\b\b\b\b\b\b\b\b\b%10d",++bytes);
+		fputc(buf[i],f);
+	}
+	cout<<endl;
 	fclose(f);
 	string scmd = "notepad ";
 	scmd = scmd + _getTemp();
 	system(scmd.c_str());
 	// after notepad, push changes:
-	string buf = "";
+	buf = "";
 	f = fopen(_getTemp().c_str(),"r");
+	bytes = 0;
+	cout << "Byte proceed:           0";
 	while (!feof(f)) {
+		printf("\b\b\b\b\b\b\b\b\b\b%10d",++bytes);
 		buf = buf + char(fgetc(f));
 	}
 	fclose(f);
 	modifyFileA(root,cdir,argv[1],buf);
+	cout<<endl;
 	return 0;
 }
 
@@ -235,19 +246,30 @@ int notepad(int argc, vector<string> argv) {
 	}
 	FILE *f;
 	f = fopen(_getTemp().c_str(),"w+");
-	fprintf(f,"%s",readFileA(root,cdr,arg1).c_str());
+	string buf = readFileA(root,cdir,argv[1]);
+	int bytes = 0;
+	cout << "Byte proceed:           0";
+	for (int i = 0; i < buf.length(); i++) {
+		printf("\b\b\b\b\b\b\b\b\b\b%10d",++bytes);
+		fputc(buf[i],f);
+	}
+	cout<<endl;
 	fclose(f);
 	string scmd = "notepad ";
 	scmd = scmd + _getTemp();
 	system(scmd.c_str());
 	// after notepad, push changes:
-	string buf = "";
+	buf = "";
 	f = fopen(_getTemp().c_str(),"r");
+	bytes = 0;
+	cout << "Byte proceed:           0";
 	while (!feof(f)) {
+		printf("\b\b\b\b\b\b\b\b\b\b%10d",++bytes);
 		buf = buf + char(fgetc(f));
 	}
 	fclose(f);
 	modifyFileA(root,cdr,arg1,buf);
+	cout<<endl;
 	return 0;
 }
 
@@ -266,8 +288,11 @@ int svt(int argc, vector<string> argv) {
 		}
 		string buf = "";
 		FILE *f;
+		cout << "Reading from: " << argv[3] << endl << "Byte proceed:           0";
 		f = fopen(argv[3].c_str(),"r");
+		int bytes = 0;
 		while (!feof(f)) {
+			printf("\b\b\b\b\b\b\b\b\b\b%10d",++bytes);
 			buf = buf + char(fgetc(f));
 		}
 		fclose(f);
@@ -276,15 +301,23 @@ int svt(int argc, vector<string> argv) {
 			return 4;
 		} 
 		createFileA(root,cdir,argv[2],buf);
+		cout<<endl;
 		return 0;
 	} else if (argv[1]=="output") {
 		if (!isFileExistsA(root,cdir,argv[2])) {
 			cout << "Specified file does not exist" << endl;
 		}
 		FILE *f;
+		int bytes = 0;
+		cout << "Writing to: " << argv[3] << endl << "Byte proceed:           0";
 		f = fopen(argv[3].c_str(),"w+");
-		fprintf(f,"%s",readFileA(root,cdir,argv[2]).c_str());
+		string buf = readFileA(root,cdir,argv[2]);
+		for (int i = 0; i < buf.length(); i++) {
+			printf("\b\b\b\b\b\b\b\b\b\b%10d",++bytes);
+			fputc(buf[i],f);
+		}
 		fclose(f);
+		cout<<endl;
 		return 0;
 	} else {
 		cout << "Invaild operation" << endl;
