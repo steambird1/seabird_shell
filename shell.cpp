@@ -539,7 +539,7 @@ int ls(int argc, vector<string> argv) {
 			v = listFileA(root,dr,1);
 			flag = true;
 		} else if (argv[1]=="-f") {
-			v = listFileA(root,dr,1);
+			v = listFileA(root,dr,2);
 			flag = true;
 		} else {
 			dr = argv[1];
@@ -670,7 +670,7 @@ void initalize(void) {
 	f["ren"]=ren;
 }
 
-#define KERNEL_VER "1.1.0.27"
+#define KERNEL_VER "1.1.0.30"
 #define SYS_ARCH "unknown architecture"
 
 void login(void) {
