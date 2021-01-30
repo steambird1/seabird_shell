@@ -31,6 +31,80 @@ string getl(void) {
 	return cmd;
 }
 
+#define helpls "Usage: ls [-F|-f]\n\
+ls without parameter will list folders and files under current folder.\n\
+-F argument will only list folders, -f argument will only list files."
+
+#define helpput "Usage: put [-o] <file> <data>\n\
+Put a line of data to a file.\n\
+You can override file instead of append file with '-o' switch."
+
+#define helpfo "Usage: mv [-o] <source> <dest>\n\
+cp [-o] <source> <dest>\n\
+\n\
+Move or copy file to another file.\n\
+You can override existing file with '-o' switch.\n\
+If you does not open this switch, program will be stopped if target exists."
+
+#define helplong "Long commands\n\
+Long commands allow you to do operate using full path.\n\
+\n\
+Long commands are:\n\
+write => put\n\
+type => cat\n\
+move => mv\n\
+mkdir => md\n\
+copy => cp\n\
+del => rm\n\
+edit => notepad"
+
+#define helpsvt "Usage: svt (import|output) <guest filename> <host filename>\n\
+Import mode to import a file from host to guest.\n\
+Output mode to output a file from guest to host."
+
+#define helpmsg "Welcome to seabird Galactic shell\n\
+\n\
+(type 'help longfor' for long-format commands.)\n\
+Commands available are:\n\
+help [title]              Show some help message.\n\
+echo <msg>                Show <msg>.\n\
+clear                     Clear screen.\n\
+errval                    Get the previous command's return value.\n\
+ls [-F|-f]                List folders and files. For more informations type 'help ls'.\n\
+put [-o] <file> <data>    Output a line of <data> to <file>. For more informations type 'help put'.\n\
+cat <file>                Output file content.\n\
+mv [-o] <source> <dest>   Move file. for more information of this command, type 'help fileoperate'.\n\
+cp [-o] <source> <dest>   Copy file. for more information of this command, type 'help fileoperate'.\n\
+rm <file>                 Remove file.\n\
+md <name>                 Create a new directory.\n\
+edit <file>               Edit a file using windows notepad.\n\
+cd (<dir>|..)             Switch 'current directory'. '..' for turn to previous folder.\n\
+color <color string>      Change the output text's color.\n\
+whoami                    Output the logged user name.\n\
+logout                    Logout from a login.\n\
+exit                      Logout from a login, or exit from a elevated shell.\n\
+elev                      Load elevated shell to run administrator commands in non-administrator account.\n\
+halt                      Turn off this shell.\n\
+reboot                    Reload this shell.\n\
+rand [min] [max]          Pick a random number.\n\
+svt ...                   Share file between this shell and host OS. for more information type 'help svt'."
+
+int help(int argc, vector<string> argv) {
+	if (argc==1) printf("%s\n",helpmsg);
+	if (argc==2) {
+		if (argv[1]=="ls") printf("%s\n",helpls);
+		else if (argv[1]=="put") printf("%s\n",helpput);
+		else if (argv[1]=="fileoperate") printf("%s\n",helpfo);
+		else if (argv[1]=="longfor") printf("%s\n",helplong);
+		else if (argv[1]=="svt") printf("%s\n",helpsvt);
+		else {
+			printf("Invaild help title\n");
+			return 1;
+		}
+	}
+	return 0;
+}
+
 /*
 The commands will be add:
 
@@ -518,6 +592,7 @@ void initalize(void) {
 	f["edit"]=editor;
 	f["notepad"]=notepad;
 	f["rand"]=random;
+	f["help"]=help;
 }
 
 void login(void) {
