@@ -10,6 +10,8 @@
 #include <time.h>
 using namespace std; 
 
+// Updated. recompile required ... 
+
 funcall f;
 acclist ac;
 bool logged = false;
@@ -257,7 +259,7 @@ int notepad(int argc, vector<string> argv) {
 	}
 	FILE *f;
 	f = fopen(_getTemp().c_str(),"w+");
-	string buf = readFileA(root,cdir,argv[1]);
+	string buf = readFileA(root,cdr,arg1);
 	int bytes = 0;
 	cout << "Byte proceed:           0";
 	for (int i = 0; i < buf.length(); i++) {
@@ -670,7 +672,7 @@ void initalize(void) {
 	f["ren"]=ren;
 }
 
-#define KERNEL_VER "1.1.0.30"
+#define KERNEL_VER "1.1.0.31"
 #define SYS_ARCH "unknown architecture"
 
 void login(void) {
