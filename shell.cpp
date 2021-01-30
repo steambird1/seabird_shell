@@ -612,6 +612,32 @@ int colors(int argc, vector<string> argv) {
 	return 0;
 }
 
+int rd(int argc, vector<string> argv) {
+	if (cdir=="/") {
+		cout << "Permission denied" << endl;
+		return 1;
+	}
+	rmDirA(root,cdir);
+	cdir=getFirst(cdir);
+	return 0;
+}
+
+int ren(int argc, vector<string> argv) {
+	if (cdir=="/") {
+		cout << "Permission denied" << endl;
+		return 1;
+	}
+	if (argc < 2) {
+		cout << "Required parameter missing" << endl;
+		return 2;
+	}
+	renameFolderA(root,cdir,argv[1]);
+	cdir=getFirst(cdir);
+	string mask = "";
+	if (cdir!="/") mask="/";
+	cdir=cdir+mask+argv[1];
+	return 0;
+} 
 
 void initalize(void) {
 	rootInit(root);
@@ -640,13 +666,18 @@ void initalize(void) {
 	f["notepad"]=notepad;
 	f["rand"]=random;
 	f["help"]=help;
+	f["rd"]=rd;
+	f["ren"]=ren;
 }
+
+#define KERNEL_VER "1.1.0.27"
+#define SYS_ARCH "unknown architecture"
 
 void login(void) {
 	// Login page
 	string login_name, login_pwd;
 	clear();
-	printf("Seabird Galactic\nKernel 1.0.1.11 on unknown architecture\n\n");
+	printf("Seabird Galactic\nKernel %s on %s\n\n",KERNEL_VER,SYS_ARCH);
 	do {
 		printf("%s Login: ",HOST_NAME);
 		cin>>login_name;

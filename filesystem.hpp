@@ -178,6 +178,17 @@ fdirnode* createFolder(fdirnode *father,const string dir_name) {
 	return f;
 } 
 
+int renameFolder(fdirnode *old_folder,const string dir_name) {
+	if (dir_name=="") return 0;
+	map<string,fdirnode*> am;
+	am = old_folder->parent->subdir;
+	am.erase(old_folder->this_name); 
+	old_folder->this_name=dir_name;
+	am[dir_name]=old_folder;
+	old_folder->parent->subdir = am;
+	return 1;
+}
+
 void _proceedFile(fdirnode *father,const string file_name,const string file_content) {
 	fdirnode f;
 	f = createFNode(father->this_name,father->parent);
@@ -245,6 +256,10 @@ vector<string> listFile(fdirnode *rootdir,const int mode) {
 }
 
 // At this moment, we need a "root" node.
+
+inline int renameFolderA(fdirnode *root,const string folder_path,const string dir_name) {
+	return renameFolder(resolve(folder_path,root),dir_name);
+}
 
 inline int copyFileA(fdirnode *root, const string source_path, const string source_filename, const string dest_path, const string dest_filename) {
 	return copyFile(resolve(source_path,root),source_filename,resolve(dest_path,root),dest_filename);
