@@ -476,7 +476,11 @@ int cd(int argc, vector<string> argv) {
 		return 1;
 	}
 	string mask = "";
+<<<<<<< HEAD
 	if (cdir!="/") mask="/"; 
+=======
+	if (cdir!="/") mask = "/";
+>>>>>>> cb78c5188a6e26f9274c2a3fe0682a4f1cd13cf1
 	cdir = cdir + mask + argv[1];
 	return 0;
 }
