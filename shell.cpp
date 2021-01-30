@@ -13,6 +13,7 @@ using namespace std;
 // Updated. recompile required ... 
 
 funcall f;
+map<string,string> extcall;//extern calls
 acclist ac;
 bool logged = false;
 account curlogin;
@@ -290,6 +291,7 @@ int notepad(int argc, vector<string> argv) {
 int svt(int argc, vector<string> argv) {
 	// svt import [pos] [local filename]
 	// svt output [pos] [local filename]
+	// svt declare [command] [local command]
 	// Use quotes for long path.
 	if (argc < 4) {
 		cout << "Required parameter missing" << endl;
@@ -334,6 +336,9 @@ int svt(int argc, vector<string> argv) {
 		}
 		fclose(f);
 		cout<<endl;
+		return 0;
+	} else if (argv[1]=="declare") {
+		extcall[argv[2]]=argv[3];
 		return 0;
 	} else {
 		cout << "Invaild operation" << endl;
@@ -402,7 +407,7 @@ int copy(int argc, vector<string> argv) {
 	if (argc >= 2 && argv[1] == "-o") override = true;
 	string sc = argv[1+int(override)], dc = argv[2+int(override)];
 	string cdr1 = getFirst(sc), cdr2 = getFirst(dc), source = getLast(sc), dest = getLast(dc);
-	cout << cdr1 << "/" << source << " ; " << cdr2 << "/" << dest << endl;//testing
+	//cout << cdr1 << "/" << source << " ; " << cdr2 << "/" << dest << endl;//testing
 	if (!isFileExistsA(root,cdr1,source)) {
 		cout << "Source file does not exist" << endl;
 		return 2;
@@ -672,7 +677,7 @@ void initalize(void) {
 	f["ren"]=ren;
 }
 
-#define KERNEL_VER "1.1.0.31"
+#define KERNEL_VER "1.2.0.46"
 #define SYS_ARCH "unknown architecture"
 
 void login(void) {
@@ -748,14 +753,24 @@ int shell(void) {
 			}
 			continue;
 		}
-		errval = call_cmd(f,split_arg(cmd,true));
-		if (errval == -1) printf("Bad command\n");
+		vector<string> v;
+		v = split_arg(cmd,true);
+		errval = call_cmd(f,v);
+		if (errval == -1) {
+			if (extcall.count(v[0])) {
+				string comd = extcall[v[0]];
+				for (int i = 1; i < v.size(); i++) comd = comd + " " + v[i];
+			//	cout << v[0] << " " << extcall[v[0]] << " " << comd << endl;
+				errval = system(comd.c_str());
+			} else printf("Bad command\n");
+		}
 	}
 }
 
 int main() {
 	// debugging management
-	//put(3,split_arg("put a.txt hi",true));
+	extcall["printf"]="echo";
+	extcall["greet"]="echo hello world";
 	// -end-
 	initz: initalize();
 	logz: login();
