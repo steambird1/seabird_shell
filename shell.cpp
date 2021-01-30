@@ -31,6 +31,16 @@ string getl(void) {
 	return cmd;
 }
 
+int getFileSize(const char* fname)
+{
+	FILE *fp;
+	fp = fopen(fname,"r");
+    fseek(fp, 0L, SEEK_END);
+    int size = ftell(fp);
+    fclose(fp);
+    return size;
+}
+
 #define helpls "Usage: ls [-F|-f]\n\
 ls without parameter will list folders and files under current folder.\n\
 -F argument will only list folders, -f argument will only list files."
@@ -221,8 +231,9 @@ int editor(int argc, vector<string> argv) {
 	system(scmd.c_str());
 	// after notepad, push changes:
 	buf = "";
-	f = fopen(_getTemp().c_str(),"r");
 	bytes = 0;
+	cout << "Modified file (" << getFileSize(_getTemp().c_str()) << " Bytes )" << endl;
+	f = fopen(_getTemp().c_str(),"r");
 	cout << "Byte proceed:           0";
 	while (!feof(f)) {
 		printf("\b\b\b\b\b\b\b\b\b\b%10d",++bytes);
@@ -260,6 +271,7 @@ int notepad(int argc, vector<string> argv) {
 	system(scmd.c_str());
 	// after notepad, push changes:
 	buf = "";
+	cout << "Modified file (" << getFileSize(_getTemp().c_str()) << " Bytes )" << endl;
 	f = fopen(_getTemp().c_str(),"r");
 	bytes = 0;
 	cout << "Byte proceed:           0";
@@ -288,7 +300,8 @@ int svt(int argc, vector<string> argv) {
 		}
 		string buf = "";
 		FILE *f;
-		cout << "Reading from: " << argv[3] << endl << "Byte proceed:           0";
+//		cout << "Modified file (" << getFileSize(_getTemp().c_str()) << " Bytes" << endl;
+		cout << "Reading from: " << argv[3] << " ( " << getFileSize(argv[3].c_str()) << " Bytes)" <<endl << "Byte proceed:           0";
 		f = fopen(argv[3].c_str(),"r");
 		int bytes = 0;
 		while (!feof(f)) {
@@ -309,9 +322,10 @@ int svt(int argc, vector<string> argv) {
 		}
 		FILE *f;
 		int bytes = 0;
-		cout << "Writing to: " << argv[3] << endl << "Byte proceed:           0";
-		f = fopen(argv[3].c_str(),"w+");
 		string buf = readFileA(root,cdir,argv[2]);
+		//cout << "Writing to: " << argv[3] << "( " << buf.length() << " Bytes)"¡¡<< endl << "Byte proceed:           0";
+		cout << "Writing to: " << argv[3] << " ( " << buf.length() << " Bytes)" << endl << "Byte proceed:           0";
+		f = fopen(argv[3].c_str(),"w+");
 		for (int i = 0; i < buf.length(); i++) {
 			printf("\b\b\b\b\b\b\b\b\b\b%10d",++bytes);
 			fputc(buf[i],f);

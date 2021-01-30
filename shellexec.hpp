@@ -22,7 +22,10 @@ vector<string> split_arg(string cmd,bool allow_quotes) {
 	for (int i = 0; i < cmd.length(); i++) {
 		switch (cmd[i]) {
 			case ' ': 
-				if (inquote) break;
+				if (inquote) {
+					buf = buf + ' ';
+					break;
+				}
 				argv.push_back(buf);
 				buf = "";
 				break;
