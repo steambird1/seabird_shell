@@ -475,7 +475,9 @@ int cd(int argc, vector<string> argv) {
 		cout << "Directory not exist" << endl;
 		return 1;
 	}
-	cdir = cdir + argv[1];
+	string mask = "";
+	if (cdir!="/") mask="/"; 
+	cdir = cdir + mask + argv[1];
 	return 0;
 }
 
