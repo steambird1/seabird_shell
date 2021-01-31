@@ -493,6 +493,7 @@ int notepad(int argc, vector<string> argv) {
 }
 
 int svt(int argc, vector<string> argv) {
+	cout << "SVT Tools V1.2.1" << endl; 
 	// svt import [pos] [local filename]
 	// svt output [pos] [local filename]
 	// svt declare [command] [local command]
@@ -524,6 +525,7 @@ int svt(int argc, vector<string> argv) {
 		} 
 		createFileA(root,cdir,argv[2],buf);
 		cout<<endl;
+		cout<<"Operation completed successfully."<<endl;
 		return 0;
 	} else if (argv[1]=="output") {
 		if (argc < 4) {
@@ -545,6 +547,7 @@ int svt(int argc, vector<string> argv) {
 		}
 		fclose(f);
 		cout<<endl;
+		cout<<"Operation completed successfully."<<endl;
 		return 0;
 	} else if (argv[1]=="declare") {
 		if (argc < 4) {
@@ -552,6 +555,7 @@ int svt(int argc, vector<string> argv) {
 		return 1;
 	}
 		extcall[argv[2]]=argv[3];
+		cout<<"Operation completed successfully."<<endl;
 		return 0;
 	} else if (argv[1]=="export") {
 		if (argc < 3) {
@@ -572,12 +576,12 @@ int svt(int argc, vector<string> argv) {
 			f = fopen(fo.c_str(),"w+");
 			for (int j = 0; j < buf.length(); j++) {
 				printf("\b\b\b\b\b\b\b\b\b\b%10d",++bytes);
-				fputc(buf[i],f);
+				fputc(buf[j],f);
 			}
 			fclose(f);
 			cout << endl;
 		} 
-		cout << "Completed" << endl;
+		cout<<"Operation completed successfully."<<endl;
 		return 0;
 	} else {
 		cout << "Invaild operation" << endl;
@@ -847,7 +851,7 @@ void initalize(void) {
 	f["sedit"]=seditor;
 }
 
-#define KERNEL_VER "2.2.0.94"
+#define KERNEL_VER "2.2.1.97"
 #define SYS_ARCH "unknown architecture"
 
 void login(void) {
