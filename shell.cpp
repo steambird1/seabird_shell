@@ -499,6 +499,10 @@ int svt(int argc, vector<string> argv) {
 	// svt declare [command] [local command]
 	// svt export [local directory]
 	// Use quotes for long path.
+	if (argc < 3) {
+		cout << "Required parameter missing" << endl;
+		return 1;
+	}
 	if (argv[1]=="import") {
 		if (argc < 4) {
 		cout << "Required parameter missing" << endl;
@@ -851,7 +855,7 @@ void initalize(void) {
 	f["sedit"]=seditor;
 }
 
-#define KERNEL_VER "2.2.1.97"
+#define KERNEL_VER "2.2.1.98"
 #define SYS_ARCH "unknown architecture"
 
 void login(void) {
