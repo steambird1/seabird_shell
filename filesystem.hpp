@@ -34,6 +34,10 @@ fdirnode* newFNode(const string dir_name, fdirnode *tparent) {
 	f->this_name=dir_name;
 	f->parent=tparent;
 	f->delete_symbol=false;
+	map<string,fdirnode*> mf;
+	mf["."]=f;
+	mf[".."]=tparent;
+	f->subdir=mf;
 	return f;
 }
 
@@ -53,21 +57,26 @@ inline bool isFileExists(const string dirname,const fdirnode *dir) {
 string getFirst(const string path) {
 	string folder_part = "",finale = "/";
 	if (path=="/") return "/";
+	bool flag = false;
 	for (int i = 1; i < path.length(); i++) {
 		if (path[i]=='/') {
-			finale = finale + folder_part;
+			finale = finale + folder_part + "/";
 			folder_part = "";
+			flag = true;
 		} else {
 			folder_part = folder_part + path[i];
 		}
 	}
+	if (finale!="/") finale.erase(finale.end()-1);
 	return finale;
 }
 
 string getLast(const string path) {
 	string folder_part = "",finale = "/";
 	if (path=="/") return "/";
-	for (int i = 1; i < path.length(); i++) {
+	int fskip=0;
+	if (path[0]=='/') fskip=1;
+	for (int i = fskip; i < path.length(); i++) {
 		if (path[i]=='/') {
 			finale = finale + folder_part;
 			folder_part = "";
@@ -310,6 +319,10 @@ void rootInit(fdirnode *root) {
 	root->delete_symbol=false;
 	root->this_name="";
 	root->parent=NULL;//Only the root's parent is NULL.
+	map<string,fdirnode*> mf;
+	mf["."]=root;
+	mf[".."]=root;// for avoid override.
+	root->subdir=mf;
 }
 
 #endif

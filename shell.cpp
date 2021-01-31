@@ -44,6 +44,28 @@ int getFileSize(const char* fname)
     return size;
 }
 
+string getRealFirst(string path) {
+	if (path=="/") return "/";
+	if (path[0]=='/') return getFirst(path);
+	string mask = "";
+	if (cdir!="/") mask="/";
+	//cout << cdir + mask + path << " " << mask << endl; 
+	//cout << getFirst(cdir + mask + path) << endl; 
+	return getFirst(cdir + mask + path);
+}
+
+inline string getRealLast(string path) {
+	return getLast(path);
+}
+
+string getRealDir(string dir) {
+	if (dir=="/") return "/";
+	if (dir[0]=='/') return dir;
+	string mask = "/";
+	if (cdir=="/") mask="";
+	return cdir + mask + dir;
+}
+
 #define helpls "Usage: ls [-F|-f]\n\
 ls without parameter will list folders and files under current folder.\n\
 -F argument will only list folders, -f argument will only list files."
@@ -208,7 +230,7 @@ string _getTemp(void) {
 	s = s + "\\sgshell_tempedit";
 	return s;
 }
-
+/*
 int editor(int argc, vector<string> argv) {
 	if (argc < 2) {
 		cout << "Required parameter missing" << endl;
@@ -247,9 +269,9 @@ int editor(int argc, vector<string> argv) {
 	cout<<endl;
 	return 0;
 }
-
+*/
 int notepad(int argc, vector<string> argv) {
-	string cdr = getFirst(argv[1]), arg1 = getLast(argv[1]);
+	string cdr = getRealFirst(argv[1]), arg1 = getRealLast(argv[1]);
 	if (argc < 2) {
 		cout << "Required parameter missing" << endl;
 		return 1;
@@ -292,12 +314,13 @@ int svt(int argc, vector<string> argv) {
 	// svt import [pos] [local filename]
 	// svt output [pos] [local filename]
 	// svt declare [command] [local command]
+	// svt export [local directory]
 	// Use quotes for long path.
-	if (argc < 4) {
+	if (argv[1]=="import") {
+		if (argc < 4) {
 		cout << "Required parameter missing" << endl;
 		return 1;
 	}
-	if (argv[1]=="import") {
 		if (isFileExistsA(root,cdir,argv[2])) {
 			cout << "Specified file already exists" << endl;
 			return 3;
@@ -321,6 +344,10 @@ int svt(int argc, vector<string> argv) {
 		cout<<endl;
 		return 0;
 	} else if (argv[1]=="output") {
+		if (argc < 4) {
+		cout << "Required parameter missing" << endl;
+		return 1;
+	}
 		if (!isFileExistsA(root,cdir,argv[2])) {
 			cout << "Specified file does not exist" << endl;
 		}
@@ -338,7 +365,37 @@ int svt(int argc, vector<string> argv) {
 		cout<<endl;
 		return 0;
 	} else if (argv[1]=="declare") {
+		if (argc < 4) {
+		cout << "Required parameter missing" << endl;
+		return 1;
+	}
 		extcall[argv[2]]=argv[3];
+		return 0;
+	} else if (argv[1]=="export") {
+		if (argc < 3) {
+		cout << "Required parameter missing" << endl;
+		return 1;
+	}
+		vector<string> v;
+		v = listFileA(root,cdir,2);
+		if (v.size()==0) {
+			cout << "No file for output" << endl;
+			return 1;
+		}
+		FILE *f;
+		for (int i = 0; i < v.size(); i++) {
+			string buf = readFileA(root,cdir,v[i]), fo = argv[2] + "\\" + v[i];
+			cout << "Outputting " << v[i] << " ( " << buf.length() << " Bytes, " << i + 1 << " of " << v.size() << " ) Byte proceed:           0";
+			int bytes = 0;
+			f = fopen(fo.c_str(),"w+");
+			for (int j = 0; j < buf.length(); j++) {
+				printf("\b\b\b\b\b\b\b\b\b\b%10d",++bytes);
+				fputc(buf[i],f);
+			}
+			fclose(f);
+			cout << endl;
+		} 
+		cout << "Completed" << endl;
 		return 0;
 	} else {
 		cout << "Invaild operation" << endl;
@@ -353,22 +410,10 @@ int echo(int argc, vector<string> argv) {
 	printf("\n");
 	return 0;
 }
-
-int put(int argc, vector<string> argv) {
-	bool override = false;
-	if (argc >= 2 && argv[1] == "-o") override = true;
-	string dat = "", fn = argv[int(override)+1];
-	if ((!override) && isFileExistsA(root,cdir,fn)) dat = readFileA(root,cdir,fn);
-	if ((override&&argc>=4)||(argc>=3)) for (vector<string>::iterator i = argv.begin()+int(override)+2; i != argv.end(); i++) dat = dat + (*i) + " ";
-	dat = dat + "\n";
-	_proceedFile(resolve(cdir,root),fn,dat);
-	return !isFileExistsA(root,"/",fn);
-}
-
 int write(int argc, vector<string> argv) {
 	bool override = false;
 	if (argc >= 2 && argv[1] == "-o") override = true;
-	string dat = "", fn = getLast(argv[int(override)+1]),cdr = getFirst(argv[int(override)+1]);
+	string dat = "", fn = getRealLast(argv[int(override)+1]),cdr = getRealFirst(argv[int(override)+1]);
 	if ((!override) && isFileExistsA(root,cdr,fn)) dat = readFileA(root,cdr,fn);
 	if ((override&&argc>=4)||(argc>=3)) for (vector<string>::iterator i = argv.begin()+int(override)+2; i != argv.end(); i++) dat = dat + (*i) + " ";
 	dat = dat + "\n";
@@ -378,7 +423,7 @@ int write(int argc, vector<string> argv) {
 
 int type(int argc, vector<string> argv) {
 	if (argc < 2) return 1;
-	string cdr = getFirst(argv[1]), fn = getLast(argv[1]);
+	string cdr = getRealFirst(argv[1]), fn = getRealLast(argv[1]);
 	if (!isFileExistsA(root,cdr,fn)) {
 		cout << "Specified file does not exist" << endl;
 		return 2;
@@ -386,7 +431,7 @@ int type(int argc, vector<string> argv) {
 	cout << readFileA(root,cdr,fn) << endl;
 	return 0;
 }
-
+/*
 int cat(int argc, vector<string> argv) {
 	if (argc < 2) return 1;
 	string fn = argv[1];
@@ -397,7 +442,7 @@ int cat(int argc, vector<string> argv) {
 	cout << readFileA(root,cdir,fn) << endl;
 	return 0;
 }
-
+*/
 int copy(int argc, vector<string> argv) {
 	if (argc < 3) {
 		cout << "Required parameter missing" << endl;
@@ -406,7 +451,7 @@ int copy(int argc, vector<string> argv) {
 	bool override = false;
 	if (argc >= 2 && argv[1] == "-o") override = true;
 	string sc = argv[1+int(override)], dc = argv[2+int(override)];
-	string cdr1 = getFirst(sc), cdr2 = getFirst(dc), source = getLast(sc), dest = getLast(dc);
+	string cdr1 = getRealFirst(sc), cdr2 = getRealFirst(dc), source = getRealLast(sc), dest = getRealLast(dc);
 	//cout << cdr1 << "/" << source << " ; " << cdr2 << "/" << dest << endl;//testing
 	if (!isFileExistsA(root,cdr1,source)) {
 		cout << "Source file does not exist" << endl;
@@ -419,7 +464,7 @@ int copy(int argc, vector<string> argv) {
 	copyFileA(root,cdr1,source,cdr2,dest);
 	return 0;
 }
-
+/*
 int cp(int argc, vector<string> argv) {
 	if (argc < 3) {
 		cout << "Required parameter missing" << endl;
@@ -438,7 +483,7 @@ int cp(int argc, vector<string> argv) {
 	copyFileA(root,cdir,argv[1+int(override)],cdir,argv[2+int(override)]);
 	return 0;
 }
-
+*/
 int move(int argc, vector<string> argv) {
 	if (argc < 3) {
 		cout << "Required parameter missing" << endl;
@@ -447,7 +492,7 @@ int move(int argc, vector<string> argv) {
 	bool override = false;
 	if (argc >= 2 && argv[1] == "-o") override = true;
 	string sc = argv[1+int(override)], dc = argv[2+int(override)];
-	string cdr1 = getFirst(sc), cdr2 = getFirst(dc), source = getLast(sc), dest = getLast(dc);
+	string cdr1 = getRealFirst(sc), cdr2 = getRealFirst(dc), source = getRealLast(sc), dest = getRealLast(dc);
 	if (!isFileExistsA(root,cdr1,source)) {
 		cout << "Source file does not exist" << endl;
 		return 2;
@@ -459,7 +504,7 @@ int move(int argc, vector<string> argv) {
 	moveFileA(root,cdr1,source,cdr2,dest);
 	return 0;
 }
-
+/*
 int mv(int argc, vector<string> argv) {
 	if (argc < 3) {
 		cout << "Required parameter missing" << endl;
@@ -478,20 +523,20 @@ int mv(int argc, vector<string> argv) {
 	moveFileA(root,cdir,argv[1+int(override)],cdir,argv[2+int(override)]);
 	return 0;
 }
-
+*/
 int del(int argc, vector<string> argv) {
 	if (argc < 2) {
 		cout << "Required parameter missing" << endl;
 		return 1;
 	}
-	string cdr = getFirst(argv[1]), fn = getLast(argv[1]);
+	string cdr = getRealFirst(argv[1]), fn = getRealLast(argv[1]);
 	if (!isFileExistsA(root,cdr,fn)) {
 		cout << "Source file does not exist" << endl;
 		return 2;
 	}
 	rmFileA(root,cdr,fn);
 }
-
+/*
 int rm(int argc, vector<string> argv) {
 	if (argc < 2) {
 		cout << "Required parameter missing" << endl;
@@ -503,7 +548,7 @@ int rm(int argc, vector<string> argv) {
 	}
 	rmFileA(root,cdir,argv[1]);
 }
-
+*/
 int _clear(int argc, vector<string> argv) {
 	return system("cls");
 }
@@ -541,7 +586,7 @@ int ls(int argc, vector<string> argv) {
 	bool flag = false;
 	string dr = cdir;
 	if (argc >= 2) {
-		if (argc >= 3) dr = argv[2];
+		if (argc >= 3) dr = getRealDir(argv[2]);
 		if (argv[1]=="-F") {
 			v = listFileA(root,dr,1);
 			flag = true;
@@ -549,7 +594,7 @@ int ls(int argc, vector<string> argv) {
 			v = listFileA(root,dr,2);
 			flag = true;
 		} else {
-			dr = argv[1];
+			dr = getRealDir(argv[1]);
 		}
 	}
 	if (!flag) v = listFileA(root,dr,3);
@@ -562,25 +607,12 @@ int ls(int argc, vector<string> argv) {
 	return 0;
 }
 
-int md(int argc, vector<string> argv) {
-	if (argc < 2) {
-		cout << "Required parameter missing" << endl;
-		return 2;
-	}
-	if (isSubdirExistsA(root,cdir,argv[1])) {
-		cout << "Directory already exists" << endl;
-		return 1;
-	}
-	createFolderA(root,cdir,argv[1]);
-	return 0;
-}
-
 int mkdir(int argc, vector<string> argv) {
 	if (argc < 2) {
 		cout << "Required parameter missing" << endl;
 		return 2;
 	}
-	string cdr = getFirst(argv[1]), fn = getLast(argv[1]);
+	string cdr = getRealFirst(argv[1]), fn = getRealLast(argv[1]);
 	if (isSubdirExistsA(root,cdr,fn)) {
 		cout << "Directory already exists" << endl;
 		return 1;
@@ -593,6 +625,9 @@ int cd(int argc, vector<string> argv) {
 	if (argc < 2) {
 		cout << "Required parameter missing" << endl;
 		return 2;
+	}
+	if (argv[1]==".") {
+		return 0;
 	}
 	if (argv[1]=="..") {
 		// turn to previous
@@ -624,8 +659,13 @@ int rd(int argc, vector<string> argv) {
 		cout << "Permission denied" << endl;
 		return 1;
 	}
-	rmDirA(root,cdir);
-	cdir=getFirst(cdir);
+	string cdr = cdir;
+	if (argc == 2) {
+		cdr = getRealDir(argv[1]);
+	}
+	rmDirA(root,cdr);
+	if (cdr == cdir) cdir=getFirst(cdir);
+	else cdir=getFirst(cdr); 
 	return 0;
 }
 
@@ -638,11 +678,21 @@ int ren(int argc, vector<string> argv) {
 		cout << "Required parameter missing" << endl;
 		return 2;
 	}
-	renameFolderA(root,cdir,argv[1]);
+	string cdr = cdir,nam = argv[1];
+	if (argc == 3) {
+		cdr = getRealDir(argv[1]); 
+		nam = argv[2];
+		if (cdr=="/") {
+			cout << "Permission denied" << endl;
+			return 1;
+		} 
+	}
+	renameFolderA(root,cdr,nam);
 	cdir=getFirst(cdir);
 	string mask = "";
 	if (cdir!="/") mask="/";
 	cdir=cdir+mask+argv[1];
+	if (argc == 3) cdir=getFirst(cdr);//for avoid...
 	return 0;
 } 
 
@@ -654,22 +704,23 @@ void initalize(void) {
 	f["whoami"]=whoami;
 	f["errval"]=errvala;
 	f["ls"]=ls;
-	f["put"]=put;
+	f["dir"]=ls; 
+	f["put"]=write;
 	f["write"]=write;
-	f["cat"]=cat; 
+	f["cat"]=type; 
 	f["type"]=type;
-	f["cp"]=cp;
+	f["cp"]=copy;
 	f["copy"]=copy;
-	f["mv"]=mv;
+	f["mv"]=move;
 	f["move"]=move;
-	f["rm"]=rm;
+	f["rm"]=del;
 	f["del"]=del;
-	f["md"]=md;
+	f["md"]=mkdir;
 	f["mkdir"]=mkdir;
 	f["cd"]=cd;
 	f["color"]=colors;
 	f["svt"]=svt;
-	f["edit"]=editor;
+	f["edit"]=notepad;
 	f["notepad"]=notepad;
 	f["rand"]=random;
 	f["help"]=help;
@@ -677,7 +728,7 @@ void initalize(void) {
 	f["ren"]=ren;
 }
 
-#define KERNEL_VER "1.2.0.46"
+#define KERNEL_VER "2.0.0.87"
 #define SYS_ARCH "unknown architecture"
 
 void login(void) {
@@ -753,6 +804,9 @@ int shell(void) {
 			}
 			continue;
 		}
+		if (cmd=="") {
+			continue;
+		} 
 		vector<string> v;
 		v = split_arg(cmd,true);
 		errval = call_cmd(f,v);
