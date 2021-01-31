@@ -780,14 +780,24 @@ int colors(int argc, vector<string> argv) {
 }
 
 int rd(int argc, vector<string> argv) {
-	if (cdir=="/") {
-		cout << "Permission denied" << endl;
-		return 1;
-	}
+	
 	string cdr = cdir;
 	if (argc == 2) {
 		cdr = getRealDir(argv[1]);
-	}
+		if (cdr=="/") {
+			cout << "Permission denied" << endl;
+			return 1;
+		}
+		if (!isSubdirExistsA(root,getFirst(cdr),getLast(cdr))) {
+			cout << "Specified directory does not exist" << endl;
+			return 2;
+		}
+	} else {
+		if (cdir=="/") {
+			cout << "Permission denied" << endl;
+			return 1;
+		}
+	} 
 	rmDirA(root,cdr);
 	if (cdr == cdir) cdir=getFirst(cdir);
 	else cdir=getFirst(cdr); 
@@ -795,10 +805,6 @@ int rd(int argc, vector<string> argv) {
 }
 
 int ren(int argc, vector<string> argv) {
-	if (cdir=="/") {
-		cout << "Permission denied" << endl;
-		return 1;
-	}
 	if (argc < 2) {
 		cout << "Required parameter missing" << endl;
 		return 2;
@@ -811,6 +817,15 @@ int ren(int argc, vector<string> argv) {
 			cout << "Permission denied" << endl;
 			return 1;
 		} 
+		if (!isSubdirExistsA(root,getFirst(cdr),getLast(cdr))) {
+			cout << "Specified directory does not exist" << endl;
+			return 2;
+		}
+	} else {
+		if (cdir=="/") {
+		cout << "Permission denied" << endl;
+		return 1;
+	}
 	}
 	renameFolderA(root,cdr,nam);
 	cdir=getFirst(cdir);
@@ -855,7 +870,7 @@ void initalize(void) {
 	f["sedit"]=seditor;
 }
 
-#define KERNEL_VER "2.2.1.98"
+#define KERNEL_VER "2.2.1.99"
 #define SYS_ARCH "unknown architecture"
 
 void login(void) {
