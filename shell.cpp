@@ -66,6 +66,21 @@ string getRealDir(string dir) {
 	return cdir + mask + dir;
 }
 
+vector<string> spiltLines(string s) {
+	vector<string> v;
+	string buf = "";
+	for (int i = 0; i < s.length(); i++) {
+		if (s[i]=='\n') {
+			v.push_back(buf);
+			buf = "";
+		} else {
+			buf = buf + s[i];
+		}
+	}
+	if (buf.length()>0) v.push_back(buf);
+	return v;
+}
+
 #define helpls "Usage: ls [-F|-f]\n\
 ls without parameter will list folders and files under current folder.\n\
 -F argument will only list folders, -f argument will only list files."
@@ -123,6 +138,38 @@ halt                      Turn off this shell.\n\
 reboot                    Reload this shell.\n\
 rand [min] [max]          Pick a random number.\n\
 svt ...                   Share file between this shell and host OS. for more information type 'help svt'."
+
+void execute_command(string cmd) {
+	vector<string> v;
+		v = split_arg(cmd,true);
+		errval = call_cmd(f,v);
+		if (errval == -1) {
+			if (extcall.count(v[0])) {
+				string comd = extcall[v[0]];
+				for (int i = 1; i < v.size(); i++) comd = comd + " " + v[i];
+			//	cout << v[0] << " " << extcall[v[0]] << " " << comd << endl;
+				errval = system(comd.c_str());
+			} else printf("Bad command\n");
+		}
+}
+
+int runscript(int argc, vector<string> argv) {
+	if (argc < 2) {
+		cout << "Required parameter missing" << endl;
+		return 2;
+	}
+	string cdr = getRealFirst(argv[1]), fn = getRealLast(argv[1]);
+	if (!isFileExistsA(root,cdr,fn)) {
+		cout << "File not exist" << endl;
+		return 1;
+	}
+	vector<string> cs;
+	cs = spiltLines(readFileA(root,cdr,fn));
+	for (vector<string>::iterator i = cs.begin(); i != cs.end(); i++) {
+		execute_command((*i));
+	}
+	return 0;
+} 
 
 int help(int argc, vector<string> argv) {
 	if (argc==1) printf("%s\n",helpmsg);
@@ -230,46 +277,6 @@ string _getTemp(void) {
 	s = s + "\\sgshell_tempedit";
 	return s;
 }
-/*
-int editor(int argc, vector<string> argv) {
-	if (argc < 2) {
-		cout << "Required parameter missing" << endl;
-		return 1;
-	}
-	if (!isFileExistsA(root,cdir,argv[1])) {
-		cout << "Specified file not exist" << endl;
-		return 1;
-	}
-	FILE *f;
-	f = fopen(_getTemp().c_str(),"w+");
-	string buf = readFileA(root,cdir,argv[1]);
-	int bytes = 0;
-	cout << "Byte proceed:           0";
-	for (int i = 0; i < buf.length(); i++) {
-		printf("\b\b\b\b\b\b\b\b\b\b%10d",++bytes);
-		fputc(buf[i],f);
-	}
-	cout<<endl;
-	fclose(f);
-	string scmd = "notepad ";
-	scmd = scmd + _getTemp();
-	system(scmd.c_str());
-	// after notepad, push changes:
-	buf = "";
-	bytes = 0;
-	cout << "Modified file (" << getFileSize(_getTemp().c_str()) << " Bytes )" << endl;
-	f = fopen(_getTemp().c_str(),"r");
-	cout << "Byte proceed:           0";
-	while (!feof(f)) {
-		printf("\b\b\b\b\b\b\b\b\b\b%10d",++bytes);
-		buf = buf + char(fgetc(f));
-	}
-	fclose(f);
-	modifyFileA(root,cdir,argv[1],buf);
-	cout<<endl;
-	return 0;
-}
-*/
 int notepad(int argc, vector<string> argv) {
 	string cdr = getRealFirst(argv[1]), arg1 = getRealLast(argv[1]);
 	if (argc < 2) {
@@ -431,18 +438,6 @@ int type(int argc, vector<string> argv) {
 	cout << readFileA(root,cdr,fn) << endl;
 	return 0;
 }
-/*
-int cat(int argc, vector<string> argv) {
-	if (argc < 2) return 1;
-	string fn = argv[1];
-	if (!isFileExistsA(root,cdir,fn)) {
-		cout << "Specified file does not exist" << endl;
-		return 2;
-	}
-	cout << readFileA(root,cdir,fn) << endl;
-	return 0;
-}
-*/
 int copy(int argc, vector<string> argv) {
 	if (argc < 3) {
 		cout << "Required parameter missing" << endl;
@@ -464,26 +459,6 @@ int copy(int argc, vector<string> argv) {
 	copyFileA(root,cdr1,source,cdr2,dest);
 	return 0;
 }
-/*
-int cp(int argc, vector<string> argv) {
-	if (argc < 3) {
-		cout << "Required parameter missing" << endl;
-		return 1;
-	}
-	bool override = false;
-	if (argc >= 2 && argv[1] == "-o") override = true;
-	if (!isFileExistsA(root,cdir,argv[1+int(override)])) {
-		cout << "Source file does not exist" << endl;
-		return 2;
-	}
-	if (isFileExistsA(root,cdir,argv[2+int(override)])&&(!override)) {
-		cout << "Target already exists (for override using '-o')" << endl;
-		return 3;
-	} 
-	copyFileA(root,cdir,argv[1+int(override)],cdir,argv[2+int(override)]);
-	return 0;
-}
-*/
 int move(int argc, vector<string> argv) {
 	if (argc < 3) {
 		cout << "Required parameter missing" << endl;
@@ -504,26 +479,6 @@ int move(int argc, vector<string> argv) {
 	moveFileA(root,cdr1,source,cdr2,dest);
 	return 0;
 }
-/*
-int mv(int argc, vector<string> argv) {
-	if (argc < 3) {
-		cout << "Required parameter missing" << endl;
-		return 1;
-	}
-	bool override = false;
-	if (argc >= 2 && argv[1] == "-o") override = true;
-	if (!isFileExistsA(root,cdir,argv[1+int(override)])) {
-		cout << "Source file does not exist" << endl;
-		return 2;
-	}
-	if (isFileExistsA(root,cdir,argv[2+int(override)])&&(!override)) {
-		cout << "Target already exists (for override using '-o')" << endl;
-		return 3;
-	} 
-	moveFileA(root,cdir,argv[1+int(override)],cdir,argv[2+int(override)]);
-	return 0;
-}
-*/
 int del(int argc, vector<string> argv) {
 	if (argc < 2) {
 		cout << "Required parameter missing" << endl;
@@ -536,19 +491,6 @@ int del(int argc, vector<string> argv) {
 	}
 	rmFileA(root,cdr,fn);
 }
-/*
-int rm(int argc, vector<string> argv) {
-	if (argc < 2) {
-		cout << "Required parameter missing" << endl;
-		return 1;
-	}
-	if (!isFileExistsA(root,cdir,argv[1])) {
-		cout << "Source file does not exist" << endl;
-		return 2;
-	}
-	rmFileA(root,cdir,argv[1]);
-}
-*/
 int _clear(int argc, vector<string> argv) {
 	return system("cls");
 }
@@ -699,6 +641,7 @@ int ren(int argc, vector<string> argv) {
 void initalize(void) {
 	rootInit(root);
 	ac=getAccounts();
+	f["run"]=runscript;
 	f["echo"]=echo;
 	f["clear"]=_clear;
 	f["whoami"]=whoami;
@@ -807,17 +750,7 @@ int shell(void) {
 		if (cmd=="") {
 			continue;
 		} 
-		vector<string> v;
-		v = split_arg(cmd,true);
-		errval = call_cmd(f,v);
-		if (errval == -1) {
-			if (extcall.count(v[0])) {
-				string comd = extcall[v[0]];
-				for (int i = 1; i < v.size(); i++) comd = comd + " " + v[i];
-			//	cout << v[0] << " " << extcall[v[0]] << " " << comd << endl;
-				errval = system(comd.c_str());
-			} else printf("Bad command\n");
-		}
+		execute_command(cmd);
 	}
 }
 
