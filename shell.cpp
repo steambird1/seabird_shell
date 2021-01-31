@@ -66,21 +66,6 @@ string getRealDir(string dir) {
 	return cdir + mask + dir;
 }
 
-vector<string> spiltLines(string s) {
-	vector<string> v;
-	string buf = "";
-	for (int i = 0; i < s.length(); i++) {
-		if (s[i]=='\n') {
-			v.push_back(buf);
-			buf = "";
-		} else {
-			buf = buf + s[i];
-		}
-	}
-	if (buf.length()>0) v.push_back(buf);
-	return v;
-}
-
 #define helpls "Usage: ls [-F|-f]\n\
 ls without parameter will list folders and files under current folder.\n\
 -F argument will only list folders, -f argument will only list files."
@@ -138,6 +123,196 @@ halt                      Turn off this shell.\n\
 reboot                    Reload this shell.\n\
 rand [min] [max]          Pick a random number.\n\
 svt ...                   Share file between this shell and host OS. for more information type 'help svt'."
+
+vector<string> spiltLines(string s) {
+	vector<string> v;
+	string buf = "";
+	for (int i = 0; i < s.length(); i++) {
+		if (s[i]=='\n') {
+			v.push_back(buf);
+			buf = "";
+		} else {
+			buf = buf + s[i];
+		}
+	}
+	if (buf.length()>0) v.push_back(buf);
+	return v;
+}
+
+string readFromArg(vector<string> arg,int pos) {
+	string buf = "";
+	for (vector<string>::iterator i = arg.begin()+pos; i != arg.end(); i++) buf = buf + (*i) + " ";
+	return buf;
+}
+
+string subreplace(string resource_str, string sub_str, string new_str)
+{
+    string::size_type pos = 0;
+    while((pos = resource_str.find(sub_str)) != string::npos)   //替换所有指定子串
+    {
+        resource_str.replace(pos, sub_str.length(), new_str);
+    }
+    return resource_str;
+}
+
+int seditor(int argc, vector<string> argv) {
+	string pathopen = "", fnopen = "";
+	vector<string> buf;
+	vector<string> empty_vector;
+	if (argc >= 2) {
+		pathopen = getRealFirst(argv[1]);
+		fnopen = getRealLast(argv[1]);
+		if (!isFileExistsA(root,pathopen,fnopen)) {
+			cout << "Specified file does not exist" << endl;
+			pathopen = "";
+			fnopen = "";
+		} else {
+			buf = spiltLines(readFileA(root,pathopen,fnopen));
+		}
+	}
+	string cm;
+	vector<string> argz;
+	do {
+		cout << "> ";
+		cm = getl();
+		argz = split_arg(cm,true);
+		string fitem = argz[0];
+		/*
+		q = quit
+		o = open <filename>
+		x = close
+		a = add <line-pos> <data>
+		p = append <data>
+		e = edit <line-pos> <data>
+		d = delete <line-pos>
+		c = copy <line-pos> <line-pos>
+		m = move <line-pos> <line-pos>
+		s = save
+		v = view [line-number]
+		r = search <data> 
+		l = replace <origin> <string>
+		*/
+		
+		// Line ID starts with 0!!!!
+		string pu = "";
+		bool flag = false;
+		switch (fitem[0]) {
+			case 'q':
+				return 0;
+			case 'o':
+				{
+					if (argz.size() >= 2) {
+		pathopen = getRealFirst(argz[1]);
+		fnopen = getRealLast(argz[1]);
+		if (!isFileExistsA(root,pathopen,fnopen)) {
+			cout << "Specified file does not exist" << endl;
+			pathopen = "";
+			fnopen = "";
+		} else {
+			buf = spiltLines(readFileA(root,pathopen,fnopen));
+		}
+	} else {
+		cout << "Required parameter missing" << endl;
+	}
+				}
+				break;
+			case 'x':
+				{
+					pathopen = "";
+				fnopen = "";
+				buf = empty_vector;
+				}
+				break;
+			case 'a':
+				if (argz.size() < 3) {
+					cout << "Required parameter missing" << endl;
+					break;
+				}
+				// insert to buf
+				buf.insert(buf.begin()+atoi(argz[1].c_str()),readFromArg(argz,2));
+				break;
+			case 'p':
+				if (argz.size() < 2) {
+					cout << "Required parameter missing" << endl;
+					break;
+				}
+				buf.push_back(readFromArg(argz,1));
+				break;
+			case 's':
+				pu = "";
+				for (vector<string>::iterator i = buf.begin(); i < buf.end(); i++) {
+					pu = pu + (*i) + "\n";
+				}
+				modifyFileA(root,pathopen,fnopen,pu);
+				break;
+			case 'v':
+					if (argz.size() < 2) {
+						int a = 0;
+					for (vector<string>::iterator i = buf.begin(); i < buf.end(); i++) {
+						cout << a++ << " " << (*i) << endl;
+					}
+				} else {
+					cout << buf[atoi(argz[1].c_str())] << endl;
+				}
+				break;
+			case 'e':
+				{
+					if (argz.size() < 3) {
+					cout << "Required parameter missing" << endl;
+					break;
+				}
+				buf[atoi(argz[1].c_str())] = readFromArg(argz,2);
+				break;
+				}
+			case 'd':
+				if (argz.size() < 2) {
+					cout << "Required parameter missing" << endl;
+					break;
+				}
+				buf.erase(buf.begin()+atoi(argz[1].c_str()));
+				break;
+			case 'c':
+				if (argz.size() < 3) {
+					cout << "Required parameter missing" << endl;
+					break;
+				}
+				buf.insert(buf.begin()+atoi(argz[2].c_str()),buf[atoi(argz[1].c_str())]);
+				break;
+			case 'm':
+				if (argz.size() < 3) {
+					cout << "Required parameter missing" << endl;
+					break;
+				}
+				buf.insert(buf.begin()+atoi(argz[2].c_str()),buf[atoi(argz[1].c_str())]);
+				buf.erase(buf.begin()+atoi(argz[1].c_str()));
+				break;
+			case 'r':
+				if (argz.size() < 2) {
+					cout << "Required parameter missing" << endl;
+					break;
+				}
+				flag = false;
+				for (int i = 0; i < buf.size(); i++) {
+						int res = buf[i].find(argz[1]);
+						if (res != string::npos) {
+							cout << "Found searching string at line " << i << ", col " << res << endl;
+							flag = true;
+						}
+					}
+				break;
+			case 'l':
+				if (argz.size() < 3) {
+					cout << "Required parameter missing" << endl;
+					break;
+				}
+				for (int i = 0; i < buf.size(); i++) {
+						//buf[i] = buf[i].replace(argz[1],argz[2]);
+						buf[i] = subreplace(buf[i],argz[1],argz[2]);
+					}
+				break;
+		}
+	} while (1);
+}
 
 void execute_command(string cmd) {
 	vector<string> v;
@@ -669,9 +844,10 @@ void initalize(void) {
 	f["help"]=help;
 	f["rd"]=rd;
 	f["ren"]=ren;
+	f["sedit"]=seditor;
 }
 
-#define KERNEL_VER "2.0.0.87"
+#define KERNEL_VER "2.2.0.94"
 #define SYS_ARCH "unknown architecture"
 
 void login(void) {
