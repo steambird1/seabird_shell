@@ -82,9 +82,10 @@ You can override existing file with '-o' switch.\n\
 If you does not open this switch, program will be stopped if target exists."
 
 #define helplong "Long commands\n\
-Long commands allow you to do operate using full path.\n\
+The short commands and long commands has been merged currently.\n\
+Following commands are same.\n\
 \n\
-Long commands are:\n\
+Same commands are:\n\
 write => put\n\
 type => cat\n\
 move => mv\n\
@@ -93,9 +94,46 @@ copy => cp\n\
 del => rm\n\
 edit => notepad"
 
-#define helpsvt "Usage: svt (import|output) <guest filename> <host filename>\n\
-Import mode to import a file from host to guest.\n\
-Output mode to output a file from guest to host."
+#define helpsvt "Usage: svt <function> <guest filename> <host filename>\n\
+Functions are:\n\
+\n\
+import         To import a file from host to guest.\n\
+output         To output a file from guest to host.\n\
+declare        To declare a external command (call a command on your host).\n\
+export         To output files in a folder from guest to host.\n\
+"
+/*
+		q = quit
+		o = open <filename>
+		x = close
+		a = add <line-pos> <data>
+		p = append <data>
+		e = edit <line-pos> <data>
+		d = delete <line-pos>
+		c = copy <line-pos> <line-pos>
+		m = move <line-pos> <line-pos>
+		s = save
+		v = view [line-number]
+		r = search <data> 
+		l = replace <origin> <string>
+		*/
+#define helpsedit "Usage: sedit [filename]\n\
+'filename' specify the filename to open.\n\
+\n\
+Editor commands are:\n\
+q = quit\n\
+o = open <filename>\n\
+x = close\n\
+a = add <line-pos> <data>\n\
+p = append <data>\n\
+e = edit <line-pos> <data>\n\
+d = delete <line-pos>\n\
+c = copy <line-pos> <line-pos>\n\
+m = move <line-pos> <line-pos>\n\
+s = save\n\
+v = view [line-number]\n\
+r = search <data> \n\
+l = replace <origin> <string>"
 
 #define helpmsg "Welcome to seabird Galactic shell\n\
 \n\
@@ -112,7 +150,10 @@ mv [-o] <source> <dest>   Move file. for more information of this command, type 
 cp [-o] <source> <dest>   Copy file. for more information of this command, type 'help fileoperate'.\n\
 rm <file>                 Remove file.\n\
 md <name>                 Create a new directory.\n\
+ren [directory] <name>    Rename a directory.\n\
+rd [directory]            Delete a directory.\n\
 edit <file>               Edit a file using windows notepad.\n\
+sedit [file]              Edit a file using seabird notepad. For more information of command, type 'help sedit'.\n\
 cd (<dir>|..)             Switch 'current directory'. '..' for turn to previous folder.\n\
 color <color string>      Change the output text's color.\n\
 whoami                    Output the logged user name.\n\
@@ -177,21 +218,6 @@ int seditor(int argc, vector<string> argv) {
 		cm = getl();
 		argz = split_arg(cm,true);
 		string fitem = argz[0];
-		/*
-		q = quit
-		o = open <filename>
-		x = close
-		a = add <line-pos> <data>
-		p = append <data>
-		e = edit <line-pos> <data>
-		d = delete <line-pos>
-		c = copy <line-pos> <line-pos>
-		m = move <line-pos> <line-pos>
-		s = save
-		v = view [line-number]
-		r = search <data> 
-		l = replace <origin> <string>
-		*/
 		
 		// Line ID starts with 0!!!!
 		string pu = "";
@@ -354,6 +380,7 @@ int help(int argc, vector<string> argv) {
 		else if (argv[1]=="fileoperate") printf("%s\n",helpfo);
 		else if (argv[1]=="longfor") printf("%s\n",helplong);
 		else if (argv[1]=="svt") printf("%s\n",helpsvt);
+		else if (argv[1]=="sedit") printf("%s\n",helpsedit);
 		else {
 			printf("Invaild help title\n");
 			return 1;
@@ -870,7 +897,7 @@ void initalize(void) {
 	f["sedit"]=seditor;
 }
 
-#define KERNEL_VER "2.2.1.99"
+#define KERNEL_VER "2.2.2.100"
 #define SYS_ARCH "unknown architecture"
 
 void login(void) {
