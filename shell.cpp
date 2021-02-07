@@ -2,6 +2,9 @@
 #include "accounts.hpp"
 #include "shellexec.hpp"
 #include "cmdtfunc.h"
+#include "scapack.hpp"
+//#include "sccio.hpp" // sccio is not used for normal shell, at least currently.
+#include "scpart.hpp" 
 #include <iostream>
 #include <cstdio>
 #include <cstdlib>
@@ -12,6 +15,7 @@ using namespace std;
 
 // Updated. recompile required ... 
 
+appacks r;
 funcall f;
 map<string,string> extcall;//extern calls
 acclist ac;
@@ -863,9 +867,120 @@ int ren(int argc, vector<string> argv) {
 	return 0;
 } 
 
+disk d;
+int d_lastname = 0;
+
+int pare(int argc, vector<string> argv) {
+	if (argc == 1||(argc == 2 && argv[1] == "view")) {
+		printf("%15s%15s\n","ID","Size");
+		printf("%15s%12d GB\n","[Unallocate]",d.unallocated_size);
+		for (int i = 0; i < d.partsz.size(); i++) {
+			printf("%15d%12d GB\n",d.partsz[i]->parname,d.partsz[i]->size);
+		}
+		return 0;
+	}
+	//if (argc < 2) return 0;
+	if (argc < 3) {
+		cout << "Required parameter missing" << endl;
+		return 2;
+	}
+	if (argv[1] == "mount") {
+		if (argc < 4) {
+			cout << "Required parameter missing" << endl;
+			return 2;
+		}
+		int target = atoi(argv[2].c_str());
+		if (target < 0) {
+			cout << "Specified partition does not exist or unsupported" << endl;
+			return 4;
+		}
+		string cdr = getRealDir(argv[3]);
+		for (vector<partition*>::iterator i = d.partsz.begin(); i != d.partsz.end(); i++) {
+			if ((*i)->parname == target) {
+				mountPartition((*i),resolve(getFirst(cdr),root),getLast(cdr));
+				cout << "Operation completed successfully" << endl;
+				return 0;
+			}
+		}
+		cout << "Specified partition does not exist or unsupported" << endl;
+		return 4;
+	}
+	if (argv[1] == "new") {
+		if (d_lastname == 0) {
+			createPartition(&d,-1,1);
+		}
+		if (createPartition(&d,++d_lastname,atoi(argv[2].c_str()))==NULL) {
+			cout << "Cannot create partition" << endl;
+			return 3;
+		}
+		cout << "Operation completed successfully" << endl;
+		return 0;
+	}
+	if (argv[1] == "format") {
+		int target = atoi(argv[2].c_str());
+		if (target < 0) {
+			cout << "Specified partition does not exist or unsupported" << endl;
+			return 4;
+		}
+		for (vector<partition*>::iterator i = d.partsz.begin(); i != d.partsz.end(); i++) {
+			if ((*i)->parname == target) {
+				d.partsz[target]->formatted = true;
+				map<string,string> emptyfiles;
+				map<string,fdirnode*> emptydirnode;
+				emptydirnode["."]=d.partsz[target]->proot;
+				emptydirnode[".."]=d.partsz[target]->proot->parent;
+				d.partsz[target]->proot->files = emptyfiles;
+				d.partsz[target]->proot->subdir = emptydirnode;
+				Sleep(d.partsz[target]->size / 100);
+				cout << "Operation completed successfully" << endl;
+				return 0;
+			}
+		}
+		cout << "Specified partition does not exist or unsupported" << endl;
+		return 4;
+	}
+	if (argv[1] == "delete") {
+		int target = atoi(argv[2].c_str());
+		if (target < 0) {
+			cout << "Specified partition does not exist or unsupported" << endl;
+			return 4;
+		}
+		//d.partsz.erase(d.partsz.begin()+target);//system reserved place saved
+		for (vector<partition*>::iterator i = d.partsz.begin(); i != d.partsz.end(); i++) {
+			if ((*i)->parname == target) {
+				d.unallocated_size+=(*i)->size;
+				d.partsz.erase(i);
+				cout << "Operation completed successfully" << endl;
+				return 0;
+			}
+		}
+		cout << "Specified partition does not exist or unsupported" << endl;
+		return 4;
+	}
+}
+
+int apack(int argc, vector<string> argv) {
+	if (argc < 2 || r.appalist.count(argv[1])==0 ) {
+		cout << "Specified package does not exist" << endl;
+		return 1;
+	}
+	cout << "Installing pack " << argv[1] << " ...  0 %";
+	for (int i = 0; i < r.appalist[argv[1]].appack_size; i++) {
+		printf("\b\b\b\b%2d %%",int((i*100)/r.appalist[argv[1]].appack_size));
+		Sleep(1000);
+	}
+	printf("\b\b\b\bOK\n");
+	return 0;
+}
+
+
 void initalize(void) {
+	// default :)
+	d = createDisk(128);
+	createPartition(&d,0,5);//default partition
 	rootInit(root);
 	ac=getAccounts();
+	r=getDefaultAppacks();
 	f["run"]=runscript;
 	f["echo"]=echo;
 	f["clear"]=_clear;
@@ -895,6 +1010,8 @@ void initalize(void) {
 	f["rd"]=rd;
 	f["ren"]=ren;
 	f["sedit"]=seditor;
+	f["par"]=pare;
+	f["apack"]=apack;
 }
 
 #define KERNEL_VER "2.2.2.100"
