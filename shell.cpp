@@ -14,6 +14,12 @@
 using namespace std; 
 
 // Updated. recompile required ... 
+// declare,
+int _call_pare(string);
+int _call_chroot(string);
+
+disk d;
+int d_lastname = 1;
 
 appacks r;
 funcall f;
@@ -523,12 +529,45 @@ int notepad(int argc, vector<string> argv) {
 	return 0;
 }
 
+FILE *svt_output;
+
+void _preserve_list(string rootpath) {
+	string loadfile;
+	vector<string> ls;
+	ls = listFileA(root,rootpath,1);
+	for (vector<string>::iterator i = ls.begin(); i != ls.end(); i++) {
+		string dirnamez = (*i).substr(1,(*i).length()-2);
+		if (dirnamez == "." || dirnamez == "..") continue;
+		string mask = "/";
+		if (rootpath=="/") mask="";
+		cout << "Reading directory: " << rootpath + mask + dirnamez << endl;
+		loadfile = "1 " + rootpath + " " + dirnamez + "\n"; // say goodbye to mask !!!
+		fprintf(svt_output,"%s",loadfile.c_str());
+		_preserve_list(rootpath + mask + dirnamez);
+	}
+	ls = listFileA(root,rootpath,2);
+	for (vector<string>::iterator i = ls.begin(); i != ls.end(); i++) {
+		string mask = "/";
+		if (rootpath=="/") mask="";
+		string buf = readFileA(root,rootpath,(*i));
+		cout << "Reading file: " << rootpath + mask + (*i) << endl;
+		char c[10];
+		itoa(buf.length(),c,10);
+		loadfile = "0 " + rootpath + " " + (*i) + " " + c + "\n" + buf + "\n"; // say goodbye to mask!
+		fprintf(svt_output,"%s",loadfile.c_str());
+	}
+}
+
 int svt(int argc, vector<string> argv) {
-	cout << "SVT Tools V1.2.1" << endl; 
+	cout << "SVT Tools V2.0.0" << endl; 
 	// svt import [pos] [local filename]
 	// svt output [pos] [local filename]
 	// svt declare [command] [local command]
 	// svt export [local directory]
+	
+	// to add:
+	// svt save [local disk file] (save current root)
+	// svt load [local disk file] (to a new partition)
 	// Use quotes for long path.
 	if (argc < 3) {
 		cout << "Required parameter missing" << endl;
@@ -618,6 +657,47 @@ int svt(int argc, vector<string> argv) {
 		} 
 		cout<<"Operation completed successfully."<<endl;
 		return 0;
+	} else if (argv[1]=="save") {
+		cout << "Reading document tree ..." << endl;
+		svt_output = fopen(argv[2].c_str(),"w+");
+		_preserve_list("/");
+		fprintf(svt_output,"-1\n");
+		fclose(svt_output);
+	} else if (argv[1]=="load") {
+		_call_pare("new");
+		char c[5];
+		itoa(d_lastname,c,10);
+		string cd = c;
+		_call_chroot(cd);
+		FILE *svt_input;
+		svt_input = fopen(argv[2].c_str(),"r+");
+		int mode,fsize;
+		char filepath[2048],filename[512];
+		string fpath,fname,buf;
+		while (fscanf(svt_input,"%d",&mode)!=EOF) {
+			if (mode==-1) break;
+			switch (mode) {
+				case 0:
+					fscanf(svt_input,"%s%s%d",filepath,filename,&fsize);
+					fgetc(svt_input);//feed '\n'
+					buf = "";
+					for (int i = 0; i < fsize; i++) {
+						buf = buf + char(fgetc(svt_input));
+					}
+					fpath = filepath; fname = filename;
+					cout << "Writing file " << fname << " to " << fpath << endl;
+					createFileA(root,fpath,fname,buf);
+					break;
+				case 1:
+					fscanf(svt_input,"%s%s",filepath,filename);
+					fpath = filepath; fname = filename;
+					cout << "Creating folder " << fpath << endl;
+					createFolderA(root,fpath,fname);
+					break;
+			}
+		}
+		cout << "Operation completed successfully." << endl;
+		return 0; 
 	} else {
 		cout << "Invaild operation" << endl;
 		return 2;
@@ -867,9 +947,6 @@ int ren(int argc, vector<string> argv) {
 	return 0;
 } 
 
-disk d;
-int d_lastname = 1;
-
 int pare(int argc, vector<string> argv) {
 	if (argc == 1||(argc == 2 && argv[1] == "view")) {
 		printf("%15s\n","ID");
@@ -883,10 +960,7 @@ int pare(int argc, vector<string> argv) {
 		string cmd;
 		do {
 			cmd=getl();
-			vector<string> argz;
-			argz = split_arg(cmd,true);
-			argz.insert(argz.begin(),"par");
-			pare(argz.size(),argz);
+			_call_pare(cmd);
 		} while (cmd!="exit");
 	} 
 	//if (argc < 2) return 0;
@@ -969,6 +1043,14 @@ int pare(int argc, vector<string> argv) {
 	}
 }
 
+int _call_pare(string cmdline) {
+	vector<string> argz;
+			argz = split_arg(cmdline,true);
+			argz.insert(argz.begin(),"par");
+			pare(argz.size(),argz);
+	return errval;
+}
+
 int apack(int argc, vector<string> argv) {
 	if (argc < 2 || r.appalist.count(argv[1])==0 ) {
 		cout << "Specified package does not exist" << endl;
@@ -998,6 +1080,14 @@ int chroot(int argc, vector<string> argv) {
 		}
 	cout << "Specified partition does not exist" << endl;
 	return 1;
+}
+
+int _call_chroot(string cmdline) {
+	vector<string> argz;
+			argz = split_arg(cmdline,true);
+			argz.insert(argz.begin(),"chroot");
+			chroot(argz.size(),argz);
+	return errval;
 }
 
 void initalize(void) {
@@ -1043,7 +1133,7 @@ void initalize(void) {
 	f["chroot"]=chroot;
 }
 
-#define KERNEL_VER "3.1.3.116"
+#define KERNEL_VER "3.2.0.118"
 #define SYS_ARCH "unknown architecture"
 
 void login(void) {
