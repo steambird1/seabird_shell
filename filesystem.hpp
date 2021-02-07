@@ -19,6 +19,7 @@ struct fdirnode {
 	map<string,fdirnode*> subdir;
 	map<string,string> files;
 	bool delete_symbol;
+	int *_resv_filesize;
 };
 
 fdirnode createFNode(const string dir_name, fdirnode *tparent) {
@@ -34,6 +35,7 @@ fdirnode* newFNode(const string dir_name, fdirnode *tparent) {
 	f->this_name=dir_name;
 	f->parent=tparent;
 	f->delete_symbol=false;
+	f->_resv_filesize=tparent->_resv_filesize;
 	map<string,fdirnode*> mf;
 	mf["."]=f;
 	mf[".."]=tparent;
@@ -229,6 +231,11 @@ string readFile(fdirnode *dir,const string file_name) {
 	return dir->files[file_name];
 }
 
+int getFileLength(fdirnode *dir,const string file_name) {
+	if (!isFileExists(file_name,dir)) return -1;
+	return readFile(dir,file_name).length();
+}
+
 // actually we need to move file and copy file.
 // ! It'll override target if target exists!!
 int copyFile(fdirnode *source_dir,const string source_filename,fdirnode *dest_dir,const string dest_filename) {
@@ -265,6 +272,10 @@ vector<string> listFile(fdirnode *rootdir,const int mode) {
 }
 
 // At this moment, we need a "root" node.
+
+inline int getFileLengthA(fdirnode *root,const string folder_path,const string dir_name) {
+	return getFileLength(resolve(folder_path,root),dir_name);
+}
 
 inline int renameFolderA(fdirnode *root,const string folder_path,const string dir_name) {
 	return renameFolder(resolve(folder_path,root),dir_name);
@@ -315,9 +326,11 @@ inline int rmFileA(fdirnode *root,const string path,const string filename) {
 }
 
 // I see we need to initalize root.
-void rootInit(fdirnode *root) {
+void rootInit(fdirnode *root,int filesize) {
 	root->delete_symbol=false;
 	root->this_name="";
+	root->_resv_filesize = new int;
+	*(root->_resv_filesize) = filesize;
 	root->parent=NULL;//Only the root's parent is NULL.
 	map<string,fdirnode*> mf;
 	mf["."]=root;

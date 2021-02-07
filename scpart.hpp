@@ -7,7 +7,7 @@ using namespace std;
 
 struct partition {
 	int parname; // -1 = system reserved.
-	int size;
+	int size; // size is not for use. (at least currently, because I see it's hard to calcute the usage of entire disk)
 	fdirnode *proot;
 	bool formatted; 
 };
@@ -32,7 +32,7 @@ partition* createPartition(disk *inDisk, int pparname, int psize) {
 	p->size=psize;
 	p->proot = new fdirnode;
 	p->formatted = false;
-	rootInit(p->proot);
+	rootInit(p->proot,psize);
 	inDisk->partsz.push_back(p);
 	inDisk->unallocated_size-=psize;
 	return p;

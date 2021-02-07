@@ -868,19 +868,29 @@ int ren(int argc, vector<string> argv) {
 } 
 
 disk d;
-int d_lastname = 0;
+int d_lastname = 1;
 
 int pare(int argc, vector<string> argv) {
 	if (argc == 1||(argc == 2 && argv[1] == "view")) {
-		printf("%15s%15s\n","ID","Size");
-		printf("%15s%12d GB\n","[Unallocate]",d.unallocated_size);
+		printf("%15s\n","ID");
+		//printf("%15s%15d Bytes\n","[Unallocate]",d.unallocated_size);
 		for (int i = 0; i < d.partsz.size(); i++) {
-			printf("%15d%12d GB\n",d.partsz[i]->parname,d.partsz[i]->size);
+			printf("%15d\n",d.partsz[i]->parname);
 		}
 		return 0;
 	}
+	if (argv[1] == "noroot") {
+		string cmd;
+		do {
+			cmd=getl();
+			vector<string> argz;
+			argz = split_arg(cmd,true);
+			argz.insert(argz.begin(),"par");
+			pare(argz.size(),argz);
+		} while (cmd!="exit");
+	} 
 	//if (argc < 2) return 0;
-	if (argc < 3) {
+	if (argc < 2) {
 		cout << "Required parameter missing" << endl;
 		return 2;
 	}
@@ -909,7 +919,7 @@ int pare(int argc, vector<string> argv) {
 		if (d_lastname == 0) {
 			createPartition(&d,-1,1);
 		}
-		if (createPartition(&d,++d_lastname,atoi(argv[2].c_str()))==NULL) {
+		if (createPartition(&d,++d_lastname,-1)==NULL) { // size: atoi(argv[2].c_str()
 			cout << "Cannot create partition" << endl;
 			return 3;
 		}
@@ -931,7 +941,7 @@ int pare(int argc, vector<string> argv) {
 				emptydirnode[".."]=d.partsz[target]->proot->parent;
 				d.partsz[target]->proot->files = emptyfiles;
 				d.partsz[target]->proot->subdir = emptydirnode;
-				Sleep(d.partsz[target]->size / 100);
+				//Sleep(d.partsz[target]->size / 100);
 				cout << "Operation completed successfully" << endl;
 				return 0;
 			}
@@ -973,12 +983,30 @@ int apack(int argc, vector<string> argv) {
 	return 0;
 }
 
+int chroot(int argc, vector<string> argv) {
+	if (argc < 2) {
+		cout << "Required parameter missing" << endl;
+		return 2;
+	}
+	int target = atoi(argv[1].c_str());
+	for (int i = 0; i < d.partsz.size(); i++) {
+			if (d.partsz[i]->parname == target) {
+				root = d.partsz[i]->proot;
+				cdir = "/";//reset cdir
+				return 0;
+			}
+		}
+	cout << "Specified partition does not exist" << endl;
+	return 1;
+}
 
 void initalize(void) {
 	// default :)
-	d = createDisk(128);
-	createPartition(&d,0,5);//default partition
-	rootInit(root);
+	d = createDisk(104857600);
+	createPartition(&d,-1,327680);//reserved
+	createPartition(&d,1,52428800);//default partition
+	//rootInit(root);
+	root = d.partsz[1]->proot;
 	ac=getAccounts();
 	r=getDefaultAppacks();
 	f["run"]=runscript;
@@ -1012,9 +1040,10 @@ void initalize(void) {
 	f["sedit"]=seditor;
 	f["par"]=pare;
 	f["apack"]=apack;
+	f["chroot"]=chroot;
 }
 
-#define KERNEL_VER "2.2.2.100"
+#define KERNEL_VER "3.1.3.116"
 #define SYS_ARCH "unknown architecture"
 
 void login(void) {
