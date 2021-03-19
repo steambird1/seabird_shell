@@ -1062,7 +1062,7 @@ int apack(int argc, vector<string> argv) {
 	cout << "Installing pack " << argv[1] << " ...  0 %";
 	for (int i = 0; i < r.appalist[argv[1]].appack_size; i++) {
 		printf("\b\b\b\b%2d %%",int((i*100)/r.appalist[argv[1]].appack_size));
-		//Sleep(1000);
+		Sleep(1000);
 	}
 	r.appalist[argv[1]].install_stat = true;
 	printf("\b\b\b\bOK\n");
