@@ -1059,6 +1059,10 @@ int apack(int argc, vector<string> argv) {
 		cout << "Specified package does not exist" << endl;
 		return 1;
 	}
+	if (r.appalist[argv[1]].install_stat) {
+		cout << "Package " << argv[1] << " already installed" << endl;
+		return 3;
+	} 
 	cout << "Installing pack " << argv[1] << " ...  0 %";
 	for (int i = 0; i < r.appalist[argv[1]].appack_size; i++) {
 		printf("\b\b\b\b%2d %%",int((i*100)/r.appalist[argv[1]].appack_size));
@@ -1138,7 +1142,7 @@ void initalize(void) {
 	f["wordpad"]=sword;
 }
 
-#define KERNEL_VER "3.2.1.129"
+#define KERNEL_VER "3.2.1.130"
 #define SYS_ARCH "unknown architecture"
 
 void login(void) {
