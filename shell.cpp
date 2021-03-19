@@ -11,6 +11,10 @@
 #include <vector>
 #include <string>
 #include <time.h>
+
+// package!
+#include "app_swriter.hpp"
+// end
 using namespace std; 
 
 // Updated. recompile required ... 
@@ -33,16 +37,6 @@ string cdir = "/", env_user = "";
 fdirnode *root = new fdirnode;
 
 vector<string> empty_argv;
-
-string getl(void) {
-	string cmd = "";
-	char c;
-		while ((c=getchar())!='\n') {
-			if (c=='\n') break;
-			cmd = cmd + c;
-		}
-	return cmd;
-}
 
 int getFileSize(const char* fname)
 {
@@ -175,20 +169,7 @@ reboot                    Reload this shell.\n\
 rand [min] [max]          Pick a random number.\n\
 svt ...                   Share file between this shell and host OS. for more information type 'help svt'."
 
-vector<string> spiltLines(string s) {
-	vector<string> v;
-	string buf = "";
-	for (int i = 0; i < s.length(); i++) {
-		if (s[i]=='\n') {
-			v.push_back(buf);
-			buf = "";
-		} else {
-			buf = buf + s[i];
-		}
-	}
-	if (buf.length()>0) v.push_back(buf);
-	return v;
-}
+
 
 string readFromArg(vector<string> arg,int pos) {
 	string buf = "";
@@ -204,6 +185,28 @@ string subreplace(string resource_str, string sub_str, string new_str)
         resource_str.replace(pos, sub_str.length(), new_str);
     }
     return resource_str;
+}
+
+int sword(int argc, vector<string> argv) {
+	if (!r.appalist["seabird-galactic-wordpad"].install_stat) {
+		cout << "Bad command" << endl << endl << "You can install it by typing:" << endl << "apack seabird-galactic-wordpad" << endl << endl;//require re-compile
+		return 3;
+	}
+	string pathopen = "", fnopen = "";
+	if (argc < 2) {
+		cout << "Required parameter missing" << endl;
+		return 1;
+	}
+	pathopen = getRealFirst(argv[1]);
+	fnopen = getRealLast(argv[1]);
+	if (!isFileExistsA(root,pathopen,fnopen)) {
+		//cout << "Specified file does not exist" << endl;
+		//return 2;
+		createFileA(root,pathopen,fnopen,"");
+	}
+	string fs = swAppMain(readFileA(root,pathopen,fnopen));
+	if (fs != "") modifyFileA(root,pathopen,fnopen,fs);
+	return 0;
 }
 
 int seditor(int argc, vector<string> argv) {
@@ -1059,8 +1062,9 @@ int apack(int argc, vector<string> argv) {
 	cout << "Installing pack " << argv[1] << " ...  0 %";
 	for (int i = 0; i < r.appalist[argv[1]].appack_size; i++) {
 		printf("\b\b\b\b%2d %%",int((i*100)/r.appalist[argv[1]].appack_size));
-		Sleep(1000);
+		//Sleep(1000);
 	}
+	r.appalist[argv[1]].install_stat = true;
 	printf("\b\b\b\bOK\n");
 	return 0;
 }
@@ -1131,9 +1135,10 @@ void initalize(void) {
 	f["par"]=pare;
 	f["apack"]=apack;
 	f["chroot"]=chroot;
+	f["wordpad"]=sword;
 }
 
-#define KERNEL_VER "3.2.0.118"
+#define KERNEL_VER "3.2.1.129"
 #define SYS_ARCH "unknown architecture"
 
 void login(void) {

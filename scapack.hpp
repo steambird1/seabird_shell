@@ -10,6 +10,7 @@ struct appack {
 	string appack_name;
 	int appack_size;//size: MB, for sure but It's fake ~
 //	map<string,appack> appack_depends; // It does not work anymore, so say bye-bye to yet
+	bool install_stat;
 };
 
 // For some reason, ...
@@ -21,6 +22,7 @@ appack createAppack(string appack_name,int appack_size) {
 	appack a;
 	a.appack_name=appack_name;
 	a.appack_size=appack_size;
+	a.install_stat=false;
 	return a;
 }
 
@@ -39,6 +41,7 @@ appacks getDefaultAppacks(void) {
 	pushAppack(&r,"seabird-galactic-filesystem-commands",61);
 	pushAppack(&r,"seabird-galactic-editor",11);
 	pushAppack(&r,"seabird-galactic-shelltools",29);
+	pushAppack(&r,"seabird-galactic-wordpad",32);
 	// and so on ...
 	// I think I need 1 sec to proceed 1 MB.
 	// By this way we need 1GB to install entire OS

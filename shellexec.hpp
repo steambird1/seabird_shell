@@ -11,8 +11,35 @@ using namespace std;
 
 #define HOST_NAME "sg.virtShell"
 
+#define SCREEN_WIDTH 80
+
 typedef int(*shell_func)(int,vector<string>);
 typedef map<string,shell_func> funcall;
+
+string getl(void) {
+	string cmd = "";
+	char c;
+		while ((c=getchar())!='\n') {
+			if (c=='\n') break;
+			cmd = cmd + c;
+		}
+	return cmd;
+}
+
+vector<string> spiltLines(string s) {
+	vector<string> v;
+	string buf = "";
+	for (int i = 0; i < s.length(); i++) {
+		if (s[i]=='\n') {
+			v.push_back(buf);
+			buf = "";
+		} else {
+			buf = buf + s[i];
+		}
+	}
+	if (buf.length()>0) v.push_back(buf);
+	return v;
+}
 
 vector<string> split_arg(string cmd,bool allow_quotes) {
 	vector<string> argv;
