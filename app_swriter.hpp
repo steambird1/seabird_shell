@@ -38,7 +38,7 @@ void printSC(swChar scObject) {
 #define ALIGN_MIDDLE 'M'
 #define ALIGN_RIGHT 'R'
 
-#define DEFAULT_ALIGN ALIGN_MIDDLE
+#define DEFAULT_ALIGN ALIGN_LEFT
 
 struct swLine {
 	vector<swChar> scline;

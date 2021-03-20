@@ -1142,8 +1142,21 @@ void initalize(void) {
 	f["wordpad"]=sword;
 }
 
-#define KERNEL_VER "3.2.1.130"
-#define SYS_ARCH "unknown architecture"
+#define KERNEL_VER "3.2.2.131"
+
+#if defined(__ia64) || defined(__itanium__) || defined(_M_IA64)
+#define SYS_ARCH "IA64"
+#else 
+#if defined(__x86_64__) || defined(_M_X64)
+#define SYS_ARCH "x86_64"
+#else 
+#if defined(__i386) || defined(_M_IX86)
+#define SYS_ARCH "i386"
+#else
+#define SYS_ARCH "unknown"
+#endif
+#endif
+#endif
 
 void login(void) {
 	// Login page
