@@ -1142,7 +1142,7 @@ void initalize(void) {
 	f["wordpad"]=sword;
 }
 
-#define KERNEL_VER "3.2.2.131"
+#define KERNEL_VER "3.2.3.132"
 
 #if defined(__ia64) || defined(__itanium__) || defined(_M_IA64)
 #define SYS_ARCH "IA64"
@@ -1198,7 +1198,10 @@ int shell(void) {
 		//cmd = "put a.txt hello";
 		//fgets(s,2048,stdin);
 		//cmd = s;
-		if (cmd=="logout") return 2;
+		if (cmd=="logout") {
+			elevstack = 0; 
+			return 2;
+		}
 		if (cmd=="exit") {
 			if (elevstack) {
 				elevstack--;
@@ -1209,6 +1212,7 @@ int shell(void) {
 		}
 		if (cmd=="halt"||cmd=="reboot") {
 			if (curlogin.account_premission > 0 || elevstack != 0) {
+				elevstack = 0;
 				if (cmd=="halt") return 0;
 				if (cmd=="reboot") return 3;
 			} else {
