@@ -139,7 +139,7 @@ e [line] = show footnote
 */
 		printf("> ");//prompts
 		cmd = getl();
-		argsp = split_arg(cmd,true);
+		argsp = split_arg(cmd,false);
 		clearVec(tfsc);
 		if (argsp[0][0]=='q') break;
 	//	int ipos;

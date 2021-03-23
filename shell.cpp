@@ -21,7 +21,7 @@ using namespace std;
 #define PE_APP 1
 #define PE_SETUP_APP 2
 
-int appmode = 2;  // usually it should be NORMAL_APP (0).
+int appmode = 0;  // usually it should be NORMAL_APP (0).
 
 // Updated. recompile required ... 
 // declare,
@@ -243,7 +243,7 @@ int seditor(int argc, vector<string> argv) {
 	do {
 		cout << "> ";
 		cm = getl();
-		argz = split_arg(cm,true);
+		argz = split_arg(cm,false);
 		string fitem = argz[0];
 		
 		// Line ID starts with 0!!!!
