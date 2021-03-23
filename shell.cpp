@@ -1132,7 +1132,7 @@ void _disprog(int stage) {
 		} else {
 			setColor("0F");
 		}
-		printf("%30s",prompt[i].c_str());
+		printf("%20s",prompt[i].c_str());
 	}
 	setColor("07");
 	printf("\n\n");
@@ -1353,7 +1353,7 @@ void initalize(void) {
 	f["user"]=usermon;
 }
 
-#define KERNEL_VER "3.3.1.149"
+#define KERNEL_VER "3.3.1.150"
 
 #if defined(__ia64) || defined(__itanium__) || defined(_M_IA64)
 #define SYS_ARCH "IA64"
