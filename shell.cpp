@@ -3,7 +3,7 @@
 #include "shellexec.hpp"
 #include "cmdtfunc.h"
 #include "scapack.hpp"
-//#include "sccio.hpp" // sccio is not used for normal shell, at least currently.
+#include "sccio.hpp" // sccio is not used for normal shell, at least currently.
 #include "scpart.hpp" 
 #include <iostream>
 #include <cstdio>
@@ -16,6 +16,12 @@
 #include "app_swriter.hpp"
 // end
 using namespace std; 
+
+#define NORMAL_APP 0
+#define PE_APP 1
+#define PE_SETUP_APP 2
+
+int appmode = 2;  // usually it should be NORMAL_APP (0).
 
 // Updated. recompile required ... 
 // declare,
@@ -188,6 +194,10 @@ string subreplace(string resource_str, string sub_str, string new_str)
 }
 
 int sword(int argc, vector<string> argv) {
+	if (appmode != 0) {
+		cout << "This program cannot be run under PE environment" << endl;
+		return 99;
+	}
 	if (!r.appalist["seabird-galactic-wordpad"].install_stat) {
 		cout << "Bad command" << endl << endl << "You can install it by typing:" << endl << "apack seabird-galactic-wordpad" << endl << endl;//require re-compile
 		return 3;
@@ -210,6 +220,10 @@ int sword(int argc, vector<string> argv) {
 }
 
 int seditor(int argc, vector<string> argv) {
+	if (appmode != 0) {
+		cout << "This program cannot be run under PE environment" << endl;
+		return 99;
+	}
 	string pathopen = "", fnopen = "";
 	vector<string> buf;
 	vector<string> empty_vector;
@@ -493,6 +507,10 @@ string _getTemp(void) {
 	return s;
 }
 int notepad(int argc, vector<string> argv) {
+	if (appmode != 0) {
+		cout << "This program cannot be run under PE environment" << endl;
+		return 99;
+	}
 	string cdr = getRealFirst(argv[1]), arg1 = getRealLast(argv[1]);
 	if (argc < 2) {
 		cout << "Required parameter missing" << endl;
@@ -562,6 +580,10 @@ void _preserve_list(string rootpath) {
 }
 
 int svt(int argc, vector<string> argv) {
+	if (appmode != 0) {
+		cout << "This program cannot be run under PE environment" << endl;
+		return 99;
+	}
 	cout << "SVT Tools V2.0.0" << endl; 
 	// svt import [pos] [local filename]
 	// svt output [pos] [local filename]
@@ -1054,6 +1076,7 @@ int _call_pare(string cmdline) {
 	return errval;
 }
 
+
 int apack(int argc, vector<string> argv) {
 	if (argc < 2 || r.appalist.count(argv[1])==0 ) {
 		cout << "Specified package does not exist" << endl;
@@ -1098,14 +1121,137 @@ int _call_chroot(string cmdline) {
 	return errval;
 }
 
+void _disprog(int stage) {
+	string prompt[] = {"1 Collect Informations","2 Install","3 Reboot"};
+	if (appmode == 1) prompt[2] = "3 Complete";
+	for (int i = 0; i < 3; i++) {
+		if (i < stage) {
+			setColor("0A");
+		} else if (i == stage) {
+			setColor("0B");
+		} else {
+			setColor("0F");
+		}
+		printf("%30s",prompt[i].c_str());
+	}
+	setColor("07");
+	printf("\n\n");
+}
+
+// Install package sliencely
+int apack_run(string packname) {
+	if (r.appalist.count(packname)==0 || r.appalist[packname].install_stat) return -1;
+	for (int i = 0; i < r.appalist[packname].appack_size; i++) Sleep(1000);
+	r.appalist[packname].install_stat = true;
+	return 0;
+}
+
+int peset(int argc, vector<string> argv) {
+	string pw,pwc;
+	if (appmode == 0) {
+		cout << "This program requires PE environment" << endl;
+		return 99; 
+	}
+	// Welcome
+	clear();
+	_disprog(-1);
+	cout << "Welcome to setup. " << endl << endl << "You can install your Seabird Galactic OS by running this guide." << endl << endl << "Press any key to continue.";
+	getch();
+	// Stage 1
+	// Getting partition information (How many)
+	clear();
+	_disprog(0);
+	cout << "Partition create" << endl << endl << "How many partition(s) would you like to create? (At least 1) : ";
+	int parc;
+	do {
+		cin >> parc;
+		if (parc>0) break;
+		cout << "You must create at least 1 partition. How many partition(s) would you like to create: ";
+	} while (1);
+	for (int i = 0; i < parc; i++) _call_pare("new");
+	// Getting user information:
+	clear();
+	_disprog(0);
+	cout << "User manager" << endl << endl;
+	// Administrator
+	cout << "You have to create an admin account. ";
+	do {
+		cout << "Input password for admin: ";
+		pw = pwd_input();
+		cout << endl << "Input again to confirm: ";
+		pwc = pwd_input();
+		if (pw != pwc) cout << "Incorrect password. Please try again." << endl;
+		else break;
+	} while (1);
+	ac["admin"]=_createAccount("admin",1,pw);
+	// Normal user
+	clear();
+	_disprog(0);
+	cout << "User manager" << endl << endl;
+	cout << "You have to create an normal user's account. Input name: ";
+	string nam;
+	cin >> nam;
+	do {
+		cout << "Input password for " << nam << ": ";
+		pw = pwd_input();
+		cout << endl << "Input again to confirm: ";
+		pwc = pwd_input();
+		if (pw != pwc) cout << "Incorrect password. Please try again." << endl;
+		else break;
+	} while (1);
+	ac[nam]=_createAccount(nam,0,pw);
+	// Perform packages
+//	int n = 0;
+	int tot = 0;
+	for (map<string,appack>::iterator i = r.appalist.begin(); i != r.appalist.end(); i++) {
+		tot += i->second.appack_size;
+	}
+	int sum = 0;
+	for (map<string,appack>::iterator i = r.appalist.begin(); i != r.appalist.end(); i++) {
+		//apack_run(i->first);
+		// Size is 50.
+		string packname = i->first;
+		for (int j = 0; j < r.appalist[packname].appack_size; j++) {
+			clear();
+			_disprog(1);
+			cout << "Package installation" << endl << endl << "Installing ...  " << endl << endl;
+			int prec = int(((sum*100)/tot)/1);
+			cout << prec << " % Completed" << endl << endl;
+			for (int k = 0; k <= 50; k++) {
+				if (k < int(prec/2)) setColor("A0");
+				else setColor("70");
+				cout << " ";
+			}
+			setColor("07");
+			cout << endl;
+			Sleep(10);
+			sum++;
+		}
+	}
+	// Prepare for reboot
+	clear();
+	_disprog(2);
+	cout << "Installation completed" << endl << endl << "Setup requires reboot to apply changes." << endl << endl;
+	if (appmode == 2) {
+		cout << "System will be reboot in 10 seconds..." << endl;
+		Sleep(10000);
+		return 3;
+	} else {
+		cout << "After exit the setup, run 'reboot' to reboot." << endl << endl << "Press any key to exit ...";
+		getch();
+		return 0; 
+	}
+}
+
 void initalize(void) {
 	// default :)
 	d = createDisk(104857600);
 	createPartition(&d,-1,327680);//reserved
-	createPartition(&d,1,52428800);//default partition
+	if (appmode == 0) createPartition(&d,1,52428800);//default partition, ONLY CREATED IN NORMAL
 	//rootInit(root);
-	root = d.partsz[1]->proot;
-	ac=getAccounts();
+	root = d.partsz[appmode?0:1]->proot;
+	if (appmode == 0) ac=getAccounts();
+	else ac["pe"]=_createAccount("pe",1,"");
 	r=getDefaultAppacks();
 	f["run"]=runscript;
 	f["echo"]=echo;
@@ -1128,21 +1274,23 @@ void initalize(void) {
 	f["mkdir"]=mkdir;
 	f["cd"]=cd;
 	f["color"]=colors;
-	f["svt"]=svt;
-	f["edit"]=notepad;
-	f["notepad"]=notepad;
+	f["svt"]=svt; // Not working under PE.
+	f["edit"]=notepad; // ibld
+	f["notepad"]=notepad; // ibld
 	f["rand"]=random;
 	f["help"]=help;
 	f["rd"]=rd;
 	f["ren"]=ren;
-	f["sedit"]=seditor;
+	f["sedit"]=seditor; // ibld
 	f["par"]=pare;
 	f["apack"]=apack;
 	f["chroot"]=chroot;
-	f["wordpad"]=sword;
+	f["wordpad"]=sword; // ibld
+	// PE supports setup.
+	f["setup"]=peset;
 }
 
-#define KERNEL_VER "3.2.3.132"
+#define KERNEL_VER "3.3.0.144"
 
 #if defined(__ia64) || defined(__itanium__) || defined(_M_IA64)
 #define SYS_ARCH "IA64"
@@ -1162,6 +1310,14 @@ void login(void) {
 	// Login page
 	string login_name, login_pwd;
 	clear();
+	if (appmode != 0) {
+		elevstack = 999;
+		curlogin = ac["pe"];
+		logged = true;
+		return; 
+	}// else {
+	//	elevstack = 0;
+	//} 
 	printf("Seabird Galactic\nKernel %s on %s\n\n",KERNEL_VER,SYS_ARCH);
 	do {
 		printf("%s Login: ",HOST_NAME);
@@ -1186,24 +1342,31 @@ void login(void) {
 
 //char s[2049];
 
+#define SESH_VER "3.3"
+
+vector<string> e_arg; 
+
 int shell(void) {
-	printf("Welcome, %s\n",curlogin.account_name.c_str());
+	if (appmode == 0) printf("Welcome, %s\n",curlogin.account_name.c_str());
+	else printf("Seabird PE Environment, Version %s\n\n",KERNEL_VER);
 	env_user = curlogin.account_name;
-	getchar();
+	if (appmode == 0) getchar();
+	if (appmode == 2) return peset(0,e_arg);
 	while (1) {
 		string cmd = "";
-		printf("%s@%s %s$ ",env_user.c_str(),HOST_NAME,cdir.c_str());
+		if (appmode == 0) printf("%s@%s %s$ ",env_user.c_str(),HOST_NAME,cdir.c_str());
+		else printf("sesh-%s$ ",SESH_VER);
 		// let us manually do this iostream
 		 cmd = getl(); 
 		//cmd = "put a.txt hello";
 		//fgets(s,2048,stdin);
 		//cmd = s;
-		if (cmd=="logout") {
+		if (appmode == 0 && cmd=="logout") {
 			elevstack = 0; 
 			return 2;
 		}
-		if (cmd=="exit") {
-			if (elevstack) {
+		if (appmode == 0 && cmd=="exit") {
+			if (elevstack && appmode == 0) {
 				elevstack--;
 				env_user = curlogin.account_name;
 				continue;
@@ -1221,17 +1384,22 @@ int shell(void) {
 			continue;
 		}
 		if (cmd=="elev") {
-			if (curlogin.account_premission <= 0 && elevstack == 0) {
+			if (appmode != 0 || ac.count("admin") == 0) printf("Cannot elevate\n");
+			else if (curlogin.account_premission <= 0 && elevstack == 0) {
 				do {
 					string login_pwd;
-					printf("Input password of %s: ",getAdminInfo().account_name.c_str());
+					printf("Input password of %s: ",ac["admin"].account_name.c_str());
 					login_pwd = pwd_input();
 					printf("\n");
-					if (login_pwd == getAdminInfo().account_password) break;
+					if (login_pwd == ac["admin"].account_password) break;
 					printf("Incorrect password. Try again.\n");
 				} while (1);
 				elevstack = 1;
-				env_user = getAdminInfo().account_name;
+				env_user = ac["admin"].account_name;
+			} else if (curlogin.account_premission > 0) {
+				printf("Already in administrator\n");
+			} else if (elevstack == 0) {
+				printf("Already elevated\n");
 			}
 			continue;
 		}
@@ -1242,18 +1410,26 @@ int shell(void) {
 	}
 }
 
-int main() {
+int main(int argc, char* argv[]) {
 	// debugging management
 	extcall["printf"]="echo";
 	extcall["greet"]="echo hello world";
 	// -end-
-	initz: initalize();
+	if (argc >= 2) {
+		string a1 = argv[1];
+		if (a1=="pe") appmode=1;
+		if (a1=="pesetup") appmode=2;
+	}
+	initalize();
+	// Initalize only do once in setup
+	initz:
 	logz: login();
 	switch (shell()) {
 		case 0:
 			return 0;
 			break;
 		case 1: case 3:
+			appmode = 0; // rebooting resets appmode.
 			goto initz;
 			break;
 		case 2:
