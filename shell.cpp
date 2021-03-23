@@ -1227,6 +1227,7 @@ int peset(int argc, vector<string> argv) {
 			Sleep(1000);
 			sum++;
 		}
+		r.appalist[packname].install_stat = true;//INSTALLED!!!
 	}
 	// Prepare for reboot
 	clear();
