@@ -1224,7 +1224,7 @@ int peset(int argc, vector<string> argv) {
 			}
 			setColor("07");
 			cout << endl;
-			Sleep(10);
+			Sleep(1000);
 			sum++;
 		}
 	}
@@ -1242,6 +1242,68 @@ int peset(int argc, vector<string> argv) {
 		return 0; 
 	}
 }
+
+// Requires elevate
+// argv[3] can be "-a" while creating to create an administrator.
+int usermon(int argc, vector<string> argv) {
+	string pw,pwc;
+	if (curlogin.account_premission <= 0 && elevstack <= 0) {
+		cout << "user: Permission denied" << endl;
+		return 3;
+	}
+	if (argc < 3) {
+		cout << "Required parameter missing" << endl;
+		return 1;
+	}
+	// new, set (permission), change (password), delete
+	if (argv[1] == "new") {
+		int perm = 0;
+		if (argc > 3 && argv[3] == "-a") perm = 1;
+		do {
+		cout << "Input password for " << argv[2] << ": ";
+		pw = pwd_input();
+		cout << endl << "Input again to confirm: ";
+		pwc = pwd_input();
+		if (pw != pwc) cout << "Incorrect password. Please try again." << endl;
+		else break;
+	} while (1);
+		ac[argv[2]]=_createAccount(argv[2],perm,pw);
+		cout << endl; 
+		return 0;
+	} else if (argv[1] == "set") {
+		if (!ac.count(argv[2])) {
+			cout << "User not found" << endl;
+			return 2;
+		}
+		pw = ac[argv[2]].account_password;
+		ac[argv[2]]=_createAccount(argv[2],atoi(argv[3].c_str()),pw);
+		return 0;
+	} else if (argv[1] == "change") {
+		if (!ac.count(argv[2])) {
+			cout << "User not found" << endl;
+			return 2;
+		}
+		int perm = ac[argv[2]].account_premission;
+		do {
+		cout << "Input password for " << argv[2] << ": ";
+		pw = pwd_input();
+		cout << endl << "Input again to confirm: ";
+		pwc = pwd_input();
+		if (pw != pwc) cout << "Incorrect password. Please try again." << endl;
+		else break;
+	} while (1);
+		ac[argv[2]]=_createAccount(argv[2],perm,pw);
+		cout << endl; 
+		return 0;
+	} else if (argv[1] == "delete") {
+		if (!ac.count(argv[2])) {
+			cout << "User not found" << endl;
+			return 2;
+		}
+		ac.erase(argv[2]);
+		return 0;
+	}
+} 
 
 void initalize(void) {
 	// default :)
@@ -1288,9 +1350,10 @@ void initalize(void) {
 	f["wordpad"]=sword; // ibld
 	// PE supports setup.
 	f["setup"]=peset;
+	f["user"]=usermon;
 }
 
-#define KERNEL_VER "3.3.0.144"
+#define KERNEL_VER "3.3.1.147"
 
 #if defined(__ia64) || defined(__itanium__) || defined(_M_IA64)
 #define SYS_ARCH "IA64"
