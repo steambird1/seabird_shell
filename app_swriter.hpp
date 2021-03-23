@@ -125,16 +125,16 @@ string swAppMain(string fileinfo) {
 	do {
 		/*
 q = exit and save
-a [line] [info] = add between
-p = add in bottom
-m [line] = modify
+a [line] [info] ... = add between
+p ... = add in bottom
+m [line] ... = modify
 d [line] = delete
 v (line) = view (as unformatted lines)
 s (line) = view (as formatted lines) 
 g [line] <L|M|R> = alignment
 c [line] [begin] [end] [color] = modify color (include B and E)
 o [line] [color] = modify all line's color
-n [line] = add footnote
+n [line] [footnote] = add footnote
 e [line] = show footnote
 */
 		printf("> ");//prompts
@@ -147,6 +147,10 @@ e [line] = show footnote
 		string stmp;
 		switch (argsp[0][0]) {
 			case 'a':
+				if (argsp.size() < 4) {
+					cout << "Required parameter missing" << endl;
+					break; 
+				}
 				stmp = "";
 				for (int i = 2; i < argsp.size(); i++) stmp = stmp + argsp[i] + " ";
 				for (int i = 0; i < stmp.length(); i++) {
@@ -155,6 +159,10 @@ e [line] = show footnote
 				fsw.insert(fsw.begin()+atoi(argsp[1].c_str()),createSW(tfsc,DEFAULT_ALIGN,NO_FOOTNOTE));
 				break;
 			case 'p':
+				if (argsp.size() < 2) {
+					cout << "Required parameter missing" << endl;
+					break;
+				}
 				stmp = "";
 				for (int i = 1; i < argsp.size(); i++) stmp = stmp + argsp[i] + " ";
 				//printf("%s\n",stmp.c_str());
@@ -164,6 +172,10 @@ e [line] = show footnote
 				fsw.push_back(createSW(tfsc,DEFAULT_ALIGN,NO_FOOTNOTE));
 				break;
 			case 'm':
+				if (argsp.size() < 3) {
+					cout << "Required parameter missing" << endl;
+					break;
+				}
 				stmp = "";
 				for (int i = 2; i < argsp.size(); i++) stmp = stmp + argsp[i] + " ";
 				for (int i = 0; i < stmp.length(); i++) {
@@ -172,9 +184,17 @@ e [line] = show footnote
 				fsw[atoi(argsp[1].c_str())]=createSW(tfsc,DEFAULT_ALIGN,NO_FOOTNOTE);
 				break;
 			case 'd':
+				if (argsp.size() < 2) {
+					cout << "Required parameter missing" << endl;
+					break;
+				}
 				fsw.erase(fsw.begin()+atoi(argsp[1].c_str()));
 				break;
 			case 'v':
+				if (argsp.size() < 1) {
+					cout << "Required parameter missing" << endl;
+					break;
+				}
 				if (argsp.size() > 1) {
 					for (vector<swChar>::iterator j = fsw[atoi(argsp[1].c_str())].scline.begin(); j != fsw[atoi(argsp[1].c_str())].scline.end(); j++) {
 						printf("%c",j->disChar);
@@ -192,6 +212,10 @@ e [line] = show footnote
 				}
 				break;
 			case 's':
+				if (argsp.size() < 1) {
+					cout << "Required parameter missing" << endl;
+					break;
+				}
 				if (argsp.size() > 1) {
 				//	printf("%c\n",fsw[atoi(argsp[1].c_str())].align);
 					makeAlign(fsw[atoi(argsp[1].c_str())].align,SCREEN_WIDTH,fsw[atoi(argsp[1].c_str())].scline.size());
@@ -210,25 +234,45 @@ e [line] = show footnote
 				}
 				break;
 			case 'g':
+				if (argsp.size() < 3) {
+					cout << "Required parameter missing" << endl;
+					break;
+				}
 				fsw[atoi(argsp[1].c_str())].align=argsp[2][0];
 				break;
 			case 'c':
+				if (argsp.size() < 5) {
+					cout << "Required parameter missing" << endl;
+					break;
+				}
 				for (int i = atoi(argsp[2].c_str()); i <= atoi(argsp[3].c_str()); i++) {
 					fsw[atoi(argsp[1].c_str())].scline[i].disColor=argsp[4];
 				}
 				break;
 			case 'o':
+				if (argsp.size() < 3) {
+					cout << "Required parameter missing" << endl;
+					break;
+				}
 				//printf("%d\n%d\n",atoi(argsp[1].c_str()),fsw[atoi(argsp[1].c_str())].scline.size());
 				for (int i = 0; i < fsw[atoi(argsp[1].c_str())].scline.size(); i++) {
 					fsw[atoi(argsp[1].c_str())].scline[i].disColor=argsp[2];
 				}
 				break;
 			case 'n':
+				if (argsp.size() < 3) {
+					cout << "Required parameter missing" << endl;
+					break;
+				}
 				stmp = argsp[2];//column not allowed
 				//for (int i = 2; i < argsp.size(); i++) stmp = stmp + argsp[i] + " ";
 				fsw[atoi(argsp[1].c_str())].footnote = stmp;
 				break;
 			case 'e':
+				if (argsp.size() < 2) {
+					cout << "Required parameter missing" << endl;
+					break;
+				}
 				printf("%s\n",fsw[atoi(argsp[1].c_str())].footnote.c_str());
 				break;
 		} 

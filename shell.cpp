@@ -1353,7 +1353,7 @@ void initalize(void) {
 	f["user"]=usermon;
 }
 
-#define KERNEL_VER "3.3.1.147"
+#define KERNEL_VER "3.3.1.149"
 
 #if defined(__ia64) || defined(__itanium__) || defined(_M_IA64)
 #define SYS_ARCH "IA64"
