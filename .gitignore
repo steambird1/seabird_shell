@@ -1,5 +1,7 @@
 *.gch
 *.exe
 gmon.out
+shell.exe
+shell_link.cpp
 shellpe.lnk
 shellpesetup.lnk
