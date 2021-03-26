@@ -41,6 +41,7 @@ int elevstack = 0,errval = 0;
 
 string cdir = "/", env_user = "";
 fdirnode *root = new fdirnode;
+fdirnode *sysroot = new fdirnode; 
 
 vector<string> empty_argv;
 
@@ -550,9 +551,7 @@ int notepad(int argc, vector<string> argv) {
 	return 0;
 }
 
-FILE *svt_output;
-
-void _preserve_list(string rootpath) {
+void _preserve_list(FILE *svt_output,fdirnode *root,string rootpath,bool slience) {
 	string loadfile;
 	vector<string> ls;
 	ls = listFileA(root,rootpath,1);
@@ -561,22 +560,51 @@ void _preserve_list(string rootpath) {
 		if (dirnamez == "." || dirnamez == "..") continue;
 		string mask = "/";
 		if (rootpath=="/") mask="";
-		cout << "Reading directory: " << rootpath + mask + dirnamez << endl;
+		if (!slience) cout << "Reading directory: " << rootpath + mask + dirnamez << endl;
 		loadfile = "1 " + rootpath + " " + dirnamez + "\n"; // say goodbye to mask !!!
 		fprintf(svt_output,"%s",loadfile.c_str());
-		_preserve_list(rootpath + mask + dirnamez);
+		_preserve_list(svt_output,root,rootpath + mask + dirnamez,slience);
 	}
 	ls = listFileA(root,rootpath,2);
 	for (vector<string>::iterator i = ls.begin(); i != ls.end(); i++) {
 		string mask = "/";
 		if (rootpath=="/") mask="";
 		string buf = readFileA(root,rootpath,(*i));
-		cout << "Reading file: " << rootpath + mask + (*i) << endl;
+		if (!slience) cout << "Reading file: " << rootpath + mask + (*i) << endl;
 		char c[10];
 		itoa(buf.length(),c,10);
 		loadfile = "0 " + rootpath + " " + (*i) + " " + c + "\n" + buf + "\n"; // say goodbye to mask!
 		fprintf(svt_output,"%s",loadfile.c_str());
 	}
+}
+
+int _loadfile(FILE *svt_input,fdirnode *lf_root,bool slience) {
+	int mode,fsize;
+		char filepath[2048],filename[512];
+		string fpath,fname,buf;
+		while (fscanf(svt_input,"%d",&mode)!=EOF) {
+			if (mode==-1) break;
+			switch (mode) {
+				case 0:
+					fscanf(svt_input,"%s%s%d",filepath,filename,&fsize);
+					fgetc(svt_input);//feed '\n'
+					buf = "";
+					for (int i = 0; i < fsize; i++) {
+						buf = buf + char(fgetc(svt_input));
+					}
+					fpath = filepath; fname = filename;
+					if (!slience) cout << "Writing file " << fname << " to " << fpath << endl;
+					createFileA(lf_root,fpath,fname,buf);
+					break;
+				case 1:
+					fscanf(svt_input,"%s%s",filepath,filename);
+					fpath = filepath; fname = filename;
+					if (!slience) cout << "Creating folder " << fpath << endl;
+					createFolderA(lf_root,fpath,fname);
+					break;
+			}
+		}
+	fclose(svt_input);
 }
 
 int svt(int argc, vector<string> argv) {
@@ -684,10 +712,11 @@ int svt(int argc, vector<string> argv) {
 		return 0;
 	} else if (argv[1]=="save") {
 		cout << "Reading document tree ..." << endl;
-		svt_output = fopen(argv[2].c_str(),"w+");
-		_preserve_list("/");
-		fprintf(svt_output,"-1\n");
-		fclose(svt_output);
+		FILE* sv;
+		sv = fopen(argv[2].c_str(),"w+");
+		_preserve_list(sv,root,"/",false);
+		fprintf(sv,"-1\n");
+		fclose(sv);
 	} else if (argv[1]=="load") {
 		_call_pare("new");
 		char c[5];
@@ -696,31 +725,7 @@ int svt(int argc, vector<string> argv) {
 		_call_chroot(cd);
 		FILE *svt_input;
 		svt_input = fopen(argv[2].c_str(),"r+");
-		int mode,fsize;
-		char filepath[2048],filename[512];
-		string fpath,fname,buf;
-		while (fscanf(svt_input,"%d",&mode)!=EOF) {
-			if (mode==-1) break;
-			switch (mode) {
-				case 0:
-					fscanf(svt_input,"%s%s%d",filepath,filename,&fsize);
-					fgetc(svt_input);//feed '\n'
-					buf = "";
-					for (int i = 0; i < fsize; i++) {
-						buf = buf + char(fgetc(svt_input));
-					}
-					fpath = filepath; fname = filename;
-					cout << "Writing file " << fname << " to " << fpath << endl;
-					createFileA(root,fpath,fname,buf);
-					break;
-				case 1:
-					fscanf(svt_input,"%s%s",filepath,filename);
-					fpath = filepath; fname = filename;
-					cout << "Creating folder " << fpath << endl;
-					createFolderA(root,fpath,fname);
-					break;
-			}
-		}
+		_loadfile(svt_input,root,false);
 		cout << "Operation completed successfully." << endl;
 		return 0; 
 	} else {
@@ -1306,16 +1311,58 @@ int usermon(int argc, vector<string> argv) {
 	}
 } 
 
-void initalize(void) {
+int syncs(int argc, vector<string> argv) {
+	vector<string> vlines;
+	vector<string> vargs;
+	vlines = spiltLines(readFileA(sysroot,"/etc","filesys.conf"));
+	for (vector<string>::iterator i = vlines.begin(); i != vlines.end(); i++) {
+		vargs = split_arg(*i,true);
+		if (vargs.size() < 2) {
+			printf("filesys.conf Corruption\n");
+			//getch();
+			return 1;
+		}
+		int vid = atoi(vargs[0].c_str());
+		fdirnode *pr;
+		partition *fp;
+		FILE *fin;
+		bool flag = false;
+		for (vector<partition*>::iterator j = d.partsz.begin(); j != d.partsz.end(); j++) {
+			if ((*j)->parname == vid) {
+				flag = true;
+				pr = (*j)->proot;
+				fp = *j; 
+				break;
+			}
+		}
+		if (!flag){
+			fp = createPartition(&d,vid,999);
+			pr = fp->proot;
+		}
+		if (vargs[1] != "*") {
+			//printf("Preserve...\n"); 
+			fin = fopen(vargs[1].c_str(),"w");
+			_preserve_list(fin,pr,"/",true);
+		}
+	}
+	return 0;
+}
+
+void syssync() {
+	vector<string> es;
+	syncs(0,es);
+	string tmp = "";
+	char c[50];
+	for (acclist::iterator i = ac.begin(); i != ac.end(); i++) {
+		itoa(i->second.account_premission,c,10);
+		tmp = tmp + i->second.account_name + " " + c + " " + i->second.account_password + "\n"; 
+	}
+	_proceedFile(resolve("/etc",sysroot),"users.conf",tmp);
+//	FileA(sysroot,"/etc","users.conf",tmp);
+}
+
+void initalize(string fn) {
 	// default :)
-	d = createDisk(104857600);
-	createPartition(&d,-1,327680);//reserved
-	if (appmode == 0) createPartition(&d,1,52428800);//default partition, ONLY CREATED IN NORMAL
-	//rootInit(root);
-	root = d.partsz[appmode?0:1]->proot;
-	if (appmode == 0) ac=getAccounts();
-	else ac["pe"]=_createAccount("pe",1,"");
-	r=getDefaultAppacks();
 	f["run"]=runscript;
 	f["echo"]=echo;
 	f["clear"]=_clear;
@@ -1352,9 +1399,50 @@ void initalize(void) {
 	// PE supports setup.
 	f["setup"]=peset;
 	f["user"]=usermon;
+	f["sync"]=syncs;
+	d = createDisk(104857600);
+	createPartition(&d,-1,327680);//reserved
+	if (appmode == 0) ac=getAccounts();
+	else ac["pe"]=_createAccount("pe",1,"");
+	sysroot = d.partsz[0]->proot;
+	if (fn == "") {
+		createFolderA(sysroot,"/","etc");
+		createFolderA(sysroot,"/","mnt");
+		if (appmode == 0) createFolderA(sysroot,"/mnt","1");
+		createFileA(sysroot,"/etc","filesys.conf",(!appmode)?"1 * *":"");
+		string tmp = "";
+		char c[50];
+		for (acclist::iterator i = ac.begin(); i != ac.end(); i++) {
+			itoa(i->second.account_premission,c,10);
+			tmp = tmp + i->second.account_name + " " + c + " " + i->second.account_password + "\n"; 
+	//		cout << tmp << endl;
+		}
+		createFileA(sysroot,"/etc","users.conf",tmp);
+		createFolderA(sysroot,"/etc","exec");
+		createFolderA(sysroot,"/","bin");
+		for (funcall::iterator i = f.begin(); i != f.end(); i++) {
+			createFileA(sysroot,"/bin",i->first,"");
+		}
+		createFolderA(sysroot,"/","sbin");
+		createFileA(sysroot,"/sbin","elev","");
+		createFolderA(sysroot,"/","tmp");
+		createFolderA(sysroot,"/","var");
+		createFolderA(sysroot,"/var","tmp");
+		createFolderA(sysroot,"/var","log");
+		createFolderA(sysroot,"/var","apack");
+		createFolderA(sysroot,"/var/apack","package");
+	} else {
+		FILE *fi;
+		fi = fopen(fn.c_str(),"r");
+		_loadfile(fi,sysroot,true); 
+	}
+	if (appmode == 0) createPartition(&d,1,52428800);//default partition, ONLY CREATED IN NORMAL
+	//rootInit(root);
+	root = d.partsz[appmode?0:1]->proot;
+	r=getDefaultAppacks();
 }
 
-#define KERNEL_VER "3.3.1.150"
+#define KERNEL_VER "4.0.0.155 Alpha"
 
 #if defined(__ia64) || defined(__itanium__) || defined(_M_IA64)
 #define SYS_ARCH "IA64"
@@ -1386,10 +1474,13 @@ void login(void) {
 	do {
 		printf("%s Login: ",HOST_NAME);
 		cin>>login_name;
+//		cout<<ac[login_name].account_name; 
 		if (!ac.count(login_name)) {
 			printf("Incorrect login name\n\n");
 			continue;
 		}
+		// JUST FOR DEBUG
+		//printf("%s is ",login_name.c_str());
 		if (ac[login_name].account_password == "") break;
 		printf("Password: ");
 		login_pwd = pwd_input();
@@ -1474,26 +1565,96 @@ int shell(void) {
 	}
 }
 
+int reb_initalize(void) {
+	if (!isSubdirExistsA(sysroot,"/","etc") || !isFileExistsA(sysroot,"/etc","filesys.conf") || !isFileExistsA(sysroot,"/etc","filesys.conf")) {
+		printf("\n\nSystem configruation is missing\nPress any key to restart");
+		getch(); 
+		return 1;
+	}
+	vector<string> vlines;
+	vector<string> vargs;
+	vlines = spiltLines(readFileA(sysroot,"/etc","filesys.conf"));
+	for (vector<string>::iterator i = vlines.begin(); i != vlines.end(); i++) {
+		vargs = split_arg(*i,true);
+		if (vargs.size() < 2) {
+			printf("\nfilesys.conf Corruption\nPress any key to continue");
+			getch();
+		}
+		int vid = atoi(vargs[0].c_str());
+		fdirnode *pr;
+		partition *fp;
+		FILE *fin;
+		bool flag = false;
+		for (vector<partition*>::iterator j = d.partsz.begin(); j != d.partsz.end(); j++) {
+			if ((*j)->parname == vid) {
+				flag = true;
+				pr = (*j)->proot;
+				fp = *j; 
+				break;
+			}
+		}
+		if (!flag){
+			fp = createPartition(&d,vid,999);
+			pr = fp->proot;
+		}
+		if (vargs[1] != "*") {
+			fin = fopen(vargs[1].c_str(),"r");
+			_loadfile(fin,pr,true);
+		}
+	}
+	vlines = spiltLines(readFileA(sysroot,"/etc","users.conf"));
+	vector<account> acs;
+	for (vector<string>::iterator i = vlines.begin(); i != vlines.end(); i++) {
+		vargs = split_arg(*i,true);
+		if (vargs.size() < 2) {
+			printf("\nusers.conf Corruption\nPress any key to continue");
+			getch();
+		} else if (vargs.size() == 2) {
+		//	printf("\nSecurity warning: user in users.conf have no password.\nPress any key to continue");
+		//	getch();
+			vargs[2] = "";
+		}
+		if (vargs[0]=="admin") createFileA(sysroot,"/var/log","lastuser.pwd",vargs[0] + " " + vargs[1] + " " + vargs[2]);
+		acs.push_back(_createAccount(vargs[0],atoi(vargs[1].c_str()),vargs[2]));
+	}
+	for (vector<account>::iterator i = acs.begin(); i != acs.end(); i++) ac[i->account_name]=(*i);
+	//printf("\"%s\"",.c_str());
+	createFileA(sysroot,"/var/log","admin_pwd.pwd",ac["admin"].account_password);
+	return 0;
+}
+
 int main(int argc, char* argv[]) {
 	// debugging management
 	extcall["printf"]="echo";
 	extcall["greet"]="echo hello world";
 	// -end-
+	systartz: printf("Seabird Galactic OS\nVersion %s on %s\n\nLoading ...",KERNEL_VER,SYS_ARCH);
 	if (argc >= 2) {
 		string a1 = argv[1];
 		if (a1=="pe") appmode=1;
 		if (a1=="pesetup") appmode=2;
+		else initalize(argv[1]);
+	} else {
+//		appmode = 1;
+		initalize("");
 	}
-	initalize();
+	if (appmode) initalize("");
 	// Initalize only do once in setup
-	initz:
+	initz: switch (reb_initalize()) {
+		case 1:
+			goto systartz;
+		default:
+			break;
+	}
 	logz: login();
 	switch (shell()) {
 		case 0:
+			syssync();
 			return 0;
 			break;
 		case 1: case 3:
 			appmode = 0; // rebooting resets appmode.
+			syssync();
 			goto initz;
 			break;
 		case 2:
