@@ -1384,8 +1384,10 @@ int syncs(int argc, vector<string> argv) {
 }
 
 void syssync() {
+	printf("Syncing system...\n");
 	vector<string> es;
 	syncs(0,es);
+	printf("Saving settings...\n");
 	string tmp = "";
 	char c[50];
 	for (acclist::iterator i = ac.begin(); i != ac.end(); i++) {
@@ -1398,6 +1400,7 @@ void syssync() {
 
 void initalize(string fn) {
 	// default :)
+	printf("Loading disk from %s ...\n",fn.c_str());
 	f["run"]=runscript;
 	f["echo"]=echo;
 	f["clear"]=_clear;
@@ -1440,7 +1443,10 @@ void initalize(string fn) {
 	if (appmode == 0) ac=getAccounts();
 	else ac["pe"]=_createAccount("pe",1,"");
 	sysroot = d.partsz[0]->proot;
-	if (fn == "") {
+	if (fn=="pe") appmode=1;
+	else if (fn=="pesetup") appmode=2;
+	else appmode=0;
+	if (fn == "" || fn == "pe" || fn == "pesetup") {
 		createFolderA(sysroot,"/","etc");
 		createFolderA(sysroot,"/","mnt");
 		if (appmode == 0) createFolderA(sysroot,"/mnt","1");
@@ -1477,7 +1483,7 @@ void initalize(string fn) {
 	r=getDefaultAppacks();
 }
 
-#define KERNEL_VER "4.1.0.229"
+#define KERNEL_VER "4.1.0.241"
 
 #if defined(__ia64) || defined(__itanium__) || defined(_M_IA64)
 #define SYS_ARCH "IA64"
@@ -1664,17 +1670,17 @@ int main(int argc, char* argv[]) {
 	extcall["printf"]="echo";
 	extcall["greet"]="echo hello world";
 	// -end-
-	systartz: printf("Seabird Galactic OS\nVersion %s on %s\n\nLoading ...",KERNEL_VER,SYS_ARCH);
+	systartz: clear();
+	printf("Seabird Galactic OS\nVersion %s on %s\n\nLoading ...",KERNEL_VER,SYS_ARCH);
 	if (argc >= 2) {
-		string a1 = argv[1];
-		if (a1=="pe") appmode=1;
-		if (a1=="pesetup") appmode=2;
-		else initalize(argv[1]);
+		string a1;// = "pesetup";
+//	if (true) {
+//		string a1 = argv[1];
+		initalize(argv[1]);
 	} else {
 //		appmode = 1;
 		initalize("");
 	}
-	if (appmode) initalize("");
 	// Initalize only do once in setup
 	initz: switch (reb_initalize()) {
 		case 1:
