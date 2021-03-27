@@ -27,27 +27,27 @@ CommandLine=
 Folders=
 IncludeVersionInfo=1
 SupportXPThemes=0
-CompilerSet=3
-CompilerSettings=0000000100000000000000000
+CompilerSet=1
+CompilerSettings=0000000000000000001000000
 UnitCount=9
 
 [VersionInfo]
-Major=3
-Minor=3
-Release=1
-Build=150
+Major=4
+Minor=0
+Release=0
+Build=203
 LanguageID=1033
 CharsetID=1252
 CompanyName=
-FileVersion=3.3.1.150
+FileVersion=4.0.0.203
 FileDescription=
 InternalName=
 LegalCopyright=
 LegalTrademarks=
 OriginalFilename=
 ProductName=Seabird Galactic Shell
-ProductVersion=3.3.1.150
-AutoIncBuildNr=0
+ProductVersion=4.0.0.203
+AutoIncBuildNr=1
 SyncProduct=1
 
 [Unit1]

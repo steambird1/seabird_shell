@@ -93,4 +93,12 @@ string pwd_input(void) {
 	return s;
 }
 
+// Both mess to recover
+
+string mess(string origin,int val) {
+	string s = "";
+	for (int i = 0; i < origin.length(); i++) s = s + char(int(origin[i])^val);
+	return s;
+}
+
 #endif

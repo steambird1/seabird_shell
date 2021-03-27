@@ -44,10 +44,12 @@ fdirnode* newFNode(const string dir_name, fdirnode *tparent) {
 }
 
 inline bool isSubdirExists(const string dirname,const fdirnode *dir) {
+	if (dir == NULL) return false;
 	return dir->subdir.count(dirname);
 }
 
 inline bool isFileExists(const string dirname,const fdirnode *dir) {
+	if (dir == NULL) return false;
 	return dir->files.count(dirname);
 }
 
