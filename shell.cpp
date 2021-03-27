@@ -21,7 +21,7 @@ using namespace std;
 #define PE_APP 1
 #define PE_SETUP_APP 2
 
-int appmode = 0;  // usually it should be NORMAL_APP (0).
+int appmode = 1;  // usually it should be NORMAL_APP (0).
 
 // Updated. recompile required ... 
 // declare,
@@ -1391,10 +1391,17 @@ void syssync() {
 	string tmp = "";
 	char c[50];
 	for (acclist::iterator i = ac.begin(); i != ac.end(); i++) {
+//		printf("%d\n",i->second.account_premission);
 		itoa(i->second.account_premission,c,10);
 		tmp = tmp + i->second.account_name + " " + c + " " + i->second.account_password + "\n"; 
 	}
-	_proceedFile(resolve("/etc",sysroot),"users.conf",tmp);
+//	printf("Please wait...\n");
+	fdirnode *reso;
+	reso = resolve("/etc",sysroot);
+//	if (reso == NULL) {
+//		printf("ERROR\n");
+//	}
+	_proceedFile(reso,"users.conf",tmp);
 //	FileA(sysroot,"/etc","users.conf",tmp);
 }
 
@@ -1445,7 +1452,6 @@ void initalize(string fn) {
 	sysroot = d.partsz[0]->proot;
 	if (fn=="pe") appmode=1;
 	else if (fn=="pesetup") appmode=2;
-	else appmode=0;
 	if (fn == "" || fn == "pe" || fn == "pesetup") {
 		createFolderA(sysroot,"/","etc");
 		createFolderA(sysroot,"/","mnt");
@@ -1654,7 +1660,7 @@ int reb_initalize(void) {
 		} else if (vargs.size() == 2) {
 		//	printf("\nSecurity warning: user in users.conf have no password.\nPress any key to continue");
 		//	getch();
-			vargs[2] = "";
+			vargs.push_back("");
 		}
 		ac[vargs[0]] = (_createAccount(vargs[0],atoi(vargs[1].c_str()),vargs[2]));
 		// It's works, but I don't know why 

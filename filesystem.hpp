@@ -231,14 +231,15 @@ int renameFolder(fdirnode *old_folder,const string dir_name) {
 }
 
 void _proceedFile(fdirnode *father,const string file_name,const string file_content) {
-	fdirnode f;
+/*	fdirnode f;
 	f = createFNode(father->this_name,father->parent);
 	f.subdir=father->subdir;
 	map<string,string> fdr;
 	fdr = father->files;
 	fdr[file_name] = file_content;
 	f.files = fdr;
-	*father = f;
+	*father = f;*/
+	father->files[file_name]=file_content;
 }
 
 int createFile(fdirnode *father,const string file_name,const string file_content) {
