@@ -8,8 +8,8 @@
 // TO CHANGE VERSION INFORMATION, EDIT PROJECT OPTIONS...
 //
 1 VERSIONINFO
-FILEVERSION 4,0,0,222
-PRODUCTVERSION 4,0,0,222
+FILEVERSION 4,1,0,223
+PRODUCTVERSION 4,1,0,223
 FILETYPE VFT_APP
 {
   BLOCK "StringFileInfo"
@@ -17,14 +17,14 @@ FILETYPE VFT_APP
     BLOCK "040904E4"
     {
       VALUE "CompanyName", ""
-      VALUE "FileVersion", "4.0.0.222"
+      VALUE "FileVersion", "4.1.0.223"
       VALUE "FileDescription", ""
       VALUE "InternalName", ""
       VALUE "LegalCopyright", ""
       VALUE "LegalTrademarks", ""
       VALUE "OriginalFilename", ""
       VALUE "ProductName", "Seabird Galactic Shell"
-      VALUE "ProductVersion", "4.0.0.222"
+      VALUE "ProductVersion", "4.1.0.223"
     }
   }
   BLOCK "VarFileInfo"

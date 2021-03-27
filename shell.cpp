@@ -27,6 +27,7 @@ int appmode = 0;  // usually it should be NORMAL_APP (0).
 // declare,
 int _call_pare(string);
 int _call_chroot(string);
+void execute_command(string);
 
 disk d;
 int d_lastname = 1;
@@ -368,6 +369,14 @@ int seditor(int argc, vector<string> argv) {
 	} while (1);
 }
 
+void runfile(fdirnode *root,string cdr,string fn) {
+	vector<string> cs;
+	cs = spiltLines(readFileA(root,cdr,fn));
+	for (vector<string>::iterator i = cs.begin(); i != cs.end(); i++) {
+		execute_command((*i));
+	}
+}
+
 void execute_command(string cmd) {
 	vector<string> v;
 		v = split_arg(cmd,true);
@@ -378,7 +387,30 @@ void execute_command(string cmd) {
 				for (int i = 1; i < v.size(); i++) comd = comd + " " + v[i];
 			//	cout << v[0] << " " << extcall[v[0]] << " " << comd << endl;
 				errval = system(comd.c_str());
-			} else printf("Bad command\n");
+			} else {
+				// looking for bin as *.run, or sbin
+				vector<string> lbin;
+				vector<string> lsbin;
+				lbin = listFileA(sysroot,"/bin",2);
+				lsbin = listFileA(sysroot,"/sbin",2);
+				for (vector<string>::iterator i = lbin.begin(); i != lbin.end(); i++) {
+					if (getExt(*i,true)=="run" && getName(*i,true)==v[0]) {
+						runfile(sysroot,"/bin",*i);
+						return;
+					}
+				}
+				for (vector<string>::iterator i = lsbin.begin(); i != lsbin.end(); i++) {
+					if (getExt(*i,true)=="run" && getName(*i,true)==v[0]) {
+						if (elevstack || curlogin.account_premission) {
+							runfile(sysroot,"/bin",*i);
+							return;
+						} else {
+							printf("Permission denied\n");
+						}
+					}
+				}
+				printf("Bad command\n");
+			}
 		}
 }
 
@@ -392,11 +424,7 @@ int runscript(int argc, vector<string> argv) {
 		cout << "File not exist" << endl;
 		return 1;
 	}
-	vector<string> cs;
-	cs = spiltLines(readFileA(root,cdr,fn));
-	for (vector<string>::iterator i = cs.begin(); i != cs.end(); i++) {
-		execute_command((*i));
-	}
+	runfile(root,cdr,fn);
 	return 0;
 } 
 
@@ -682,6 +710,7 @@ int svt(int argc, vector<string> argv) {
 		return 1;
 	}
 		extcall[argv[2]]=argv[3];
+		_proceedFile(resolve("/bin",sysroot),argv[2],argv[3]); 
 		cout<<"Operation completed successfully."<<endl;
 		return 0;
 	} else if (argv[1]=="export") {
@@ -1442,7 +1471,7 @@ void initalize(string fn) {
 	r=getDefaultAppacks();
 }
 
-#define KERNEL_VER "4.0.0.222"
+#define KERNEL_VER "4.1.0.223"
 
 #if defined(__ia64) || defined(__itanium__) || defined(_M_IA64)
 #define SYS_ARCH "IA64"
@@ -1497,7 +1526,7 @@ void login(void) {
 
 //char s[2049];
 
-#define SESH_VER "3.3"
+#define SESH_VER "4.1"
 
 vector<string> e_arg; 
 

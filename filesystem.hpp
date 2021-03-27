@@ -58,6 +58,34 @@ inline bool isFileExists(const string dirname,const fdirnode *dir) {
  * return: folder node
 */
 
+string getName(const string filename,const bool fullname) {
+	int i;
+	if (fullname) {
+		for (i = filename.length()-1; i >= 0; i--) {
+			if (filename[i]=='.') break;
+		}
+	} else {
+		for (i = 0; i < filename.length(); i++) {
+			if (filename[i]=='.') break; 
+		}
+	}
+	return filename.substr(0,i);
+}
+
+string getExt(const string filename,const bool fullname) {
+	int i;
+	if (fullname) {
+		for (i = filename.length()-1; i >= 0; i--) {
+			if (filename[i]=='.') break;
+		}
+	} else {
+		for (i = 0; i < filename.length(); i++) {
+			if (filename[i]=='.') break; 
+		}
+	}
+	return filename.substr(i+1,filename.length());
+}
+
 string getFirst(const string path) {
 	string folder_part = "",finale = "/";
 	if (path=="/") return "/";
