@@ -1,5 +1,6 @@
 *.gch
 *.exe
+*.o
 gmon.out
 shell.exe
 shell_link.cpp
