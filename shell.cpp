@@ -1368,8 +1368,12 @@ int syncs(int argc, vector<string> argv) {
 		if (!flag){
 			fp = createPartition(&d,vid,999);
 			pr = fp->proot;
+			if (vargs[1] != "*") {
+				fin = fopen(vargs[1].c_str(),"r");
+				_loadfile(fin,pr,true);
+			}
 		}
-		if (vargs[1] != "*") {
+		else if (vargs[1] != "*") {
 			//printf("Preserve...\n"); 
 			fin = fopen(vargs[1].c_str(),"w");
 			_preserve_list(fin,pr,"/",true);
@@ -1473,7 +1477,7 @@ void initalize(string fn) {
 	r=getDefaultAppacks();
 }
 
-#define KERNEL_VER "4.1.0.228"
+#define KERNEL_VER "4.1.0.229"
 
 #if defined(__ia64) || defined(__itanium__) || defined(_M_IA64)
 #define SYS_ARCH "IA64"
