@@ -1442,7 +1442,7 @@ void initalize(string fn) {
 	r=getDefaultAppacks();
 }
 
-#define KERNEL_VER "4.0.0.155 Alpha"
+#define KERNEL_VER "4.0.0.222"
 
 #if defined(__ia64) || defined(__itanium__) || defined(_M_IA64)
 #define SYS_ARCH "IA64"
@@ -1565,6 +1565,8 @@ int shell(void) {
 	}
 }
 
+vector<string> global_pw;
+
 int reb_initalize(void) {
 	if (!isSubdirExistsA(sysroot,"/","etc") || !isFileExistsA(sysroot,"/etc","filesys.conf") || !isFileExistsA(sysroot,"/etc","filesys.conf")) {
 		printf("\n\nSystem configruation is missing\nPress any key to restart");
@@ -1603,7 +1605,6 @@ int reb_initalize(void) {
 		}
 	}
 	vlines = spiltLines(readFileA(sysroot,"/etc","users.conf"));
-	vector<account> acs;
 	for (vector<string>::iterator i = vlines.begin(); i != vlines.end(); i++) {
 		vargs = split_arg(*i,true);
 		if (vargs.size() < 2) {
@@ -1614,12 +1615,12 @@ int reb_initalize(void) {
 		//	getch();
 			vargs[2] = "";
 		}
-		if (vargs[0]=="admin") createFileA(sysroot,"/var/log","lastuser.pwd",vargs[0] + " " + vargs[1] + " " + vargs[2]);
-		acs.push_back(_createAccount(vargs[0],atoi(vargs[1].c_str()),vargs[2]));
+		ac[vargs[0]] = (_createAccount(vargs[0],atoi(vargs[1].c_str()),vargs[2]));
+		// It's works, but I don't know why 
+		if (vargs[2].length() > 0) {
+			global_pw.push_back(ac[vargs[0]].account_password);
+		}
 	}
-	for (vector<account>::iterator i = acs.begin(); i != acs.end(); i++) ac[i->account_name]=(*i);
-	//printf("\"%s\"",.c_str());
-	createFileA(sysroot,"/var/log","admin_pwd.pwd",ac["admin"].account_password);
 	return 0;
 }
 
