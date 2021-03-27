@@ -406,6 +406,7 @@ void execute_command(string cmd) {
 							return;
 						} else {
 							printf("Permission denied\n");
+							return; 
 						}
 					}
 				}
@@ -1471,7 +1472,7 @@ void initalize(string fn) {
 	r=getDefaultAppacks();
 }
 
-#define KERNEL_VER "4.1.0.223"
+#define KERNEL_VER "4.1.0.224"
 
 #if defined(__ia64) || defined(__itanium__) || defined(_M_IA64)
 #define SYS_ARCH "IA64"
