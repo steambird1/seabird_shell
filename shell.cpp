@@ -1373,6 +1373,7 @@ int syncs(int argc, vector<string> argv) {
 			//printf("Preserve...\n"); 
 			fin = fopen(vargs[1].c_str(),"w");
 			_preserve_list(fin,pr,"/",true);
+			fclose(fin);
 		}
 	}
 	return 0;
