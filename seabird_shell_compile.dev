@@ -27,26 +27,26 @@ CommandLine=
 Folders=
 IncludeVersionInfo=1
 SupportXPThemes=0
-CompilerSet=3
-CompilerSettings=0000000100000000000000000
-UnitCount=9
+CompilerSet=0
+CompilerSettings=0000000000000000001000000
+UnitCount=10
 
 [VersionInfo]
 Major=4
 Minor=1
 Release=0
-Build=254
+Build=263
 LanguageID=1033
 CharsetID=1252
 CompanyName=
-FileVersion=4.1.0.254
+FileVersion=4.1.0.263
 FileDescription=
 InternalName=
 LegalCopyright=
 LegalTrademarks=
 OriginalFilename=
 ProductName=Seabird Galactic Shell
-ProductVersion=4.1.0.254
+ProductVersion=4.1.0.263
 AutoIncBuildNr=1
 SyncProduct=1
 
@@ -132,6 +132,16 @@ BuildCmd=
 
 [Unit9]
 FileName=shellexec.hpp
+CompileCpp=1
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit10]
+FileName=app_bluebetter\app_bbmain.hpp
 CompileCpp=1
 Folder=
 Compile=1
