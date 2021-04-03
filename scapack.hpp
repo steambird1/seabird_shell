@@ -32,6 +32,7 @@ void pushAppack(appacks *alist,string appack_name,int appack_size) {
 
 appacks getDefaultAppacks(void) {
 	appacks r;
+	pushAppack(&r,"boot-sector",25);
 	pushAppack(&r,"seabird-galactic-kernel",125);
 	pushAppack(&r,"seabird-galactic-login",3);
 	pushAppack(&r,"seabird-galactic-security",2);
@@ -42,6 +43,7 @@ appacks getDefaultAppacks(void) {
 	pushAppack(&r,"seabird-galactic-editor",11);
 	pushAppack(&r,"seabird-galactic-shelltools",29);
 	pushAppack(&r,"seabird-galactic-wordpad",32);
+	pushAppack(&r,"seabird-galactic-bluebetter",53);
 	// and so on ...
 	// I think I need 1 sec to proceed 1 MB.
 	// By this way we need 1GB to install entire OS

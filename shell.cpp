@@ -14,6 +14,7 @@
 
 // package!
 #include "app_swriter.hpp"
+#include "app_bluebetter/app_bbmain.hpp"
 // end
 using namespace std; 
 
@@ -195,6 +196,39 @@ string subreplace(string resource_str, string sub_str, string new_str)
     return resource_str;
 }
 
+int blue(int argc, vector<string> argv) {
+	if (appmode != 0) {
+		cout << "This program cannot be run under PE environment" << endl;
+		return 99;
+	}
+	if (!r.appalist["seabird-galactic-bluebetter"].install_stat) {
+		cout << "Bad command" << endl << endl << "You can install it by typing:" << endl << "apack seabird-galactic-bluebetter" << endl << endl;//require re-compile
+		return -3;
+	}
+	if (argc < 2) {
+		verput();
+		intp();
+	} else if (argv[1] == "shell") {
+		verput();
+		intp();
+	} else if (argv[1] == "version") {
+		verput();
+		return 0;
+	} else {
+		if (!isFileExistsA(root,getRealFirst(argv[1]),getRealLast(argv[1]))) {
+			cout << "Specified file does not exist" << endl;
+			return -2;
+		} else {
+			clock_t begin = clock(), end;
+			int ret = runCode(readFileA(root,getRealFirst(argv[1]),getRealLast(argv[1])));
+			end = clock();
+			cout << endl << "Program exited using " << ((double)end - begin) / CLOCKS_PER_SEC <<" sec with return value " << ret << endl;
+			return ret;
+		}
+	}
+	return 0;
+}
+
 int sword(int argc, vector<string> argv) {
 	if (appmode != 0) {
 		cout << "This program cannot be run under PE environment" << endl;
@@ -202,7 +236,7 @@ int sword(int argc, vector<string> argv) {
 	}
 	if (!r.appalist["seabird-galactic-wordpad"].install_stat) {
 		cout << "Bad command" << endl << endl << "You can install it by typing:" << endl << "apack seabird-galactic-wordpad" << endl << endl;//require re-compile
-		return 3;
+		return -1;
 	}
 	string pathopen = "", fnopen = "";
 	if (argc < 2) {
@@ -1445,6 +1479,7 @@ void initalize(string fn) {
 	f["setup"]=peset;
 	f["user"]=usermon;
 	f["sync"]=syncs;
+	f["blue"]=blue;
 	d = createDisk(104857600);
 	createPartition(&d,-1,327680);//reserved
 	if (appmode == 0) ac=getAccounts();
@@ -1489,7 +1524,7 @@ void initalize(string fn) {
 	r=getDefaultAppacks();
 }
 
-#define KERNEL_VER "4.1.0.254"
+#define KERNEL_VER "4.2.0.263"
 
 #if defined(__ia64) || defined(__itanium__) || defined(_M_IA64)
 #define SYS_ARCH "IA64"
@@ -1544,7 +1579,7 @@ void login(void) {
 
 //char s[2049];
 
-#define SESH_VER "4.1"
+#define SESH_VER "4.2"
 
 vector<string> e_arg; 
 
