@@ -21,7 +21,7 @@ using namespace std;
 #define PE_APP 1
 #define PE_SETUP_APP 2
 
-int appmode = 1;  // usually it should be NORMAL_APP (0).
+int appmode = 0;  // usually it should be NORMAL_APP (0).
 
 // Updated. recompile required ... 
 // declare,
@@ -1489,7 +1489,7 @@ void initalize(string fn) {
 	r=getDefaultAppacks();
 }
 
-#define KERNEL_VER "4.1.0.241"
+#define KERNEL_VER "4.1.0.254"
 
 #if defined(__ia64) || defined(__itanium__) || defined(_M_IA64)
 #define SYS_ARCH "IA64"
