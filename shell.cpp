@@ -47,6 +47,10 @@ fdirnode *sysroot = new fdirnode;
 
 vector<string> empty_argv;
 
+void sysfail(void) {
+	while (true);
+}
+
 int getFileSize(const char* fname)
 {
 	FILE *fp;
@@ -1432,9 +1436,10 @@ void syssync() {
 //	printf("Please wait...\n");
 	fdirnode *reso;
 	reso = resolve("/etc",sysroot);
-//	if (reso == NULL) {
-//		printf("ERROR\n");
-//	}
+	if (reso == NULL) {
+		printf("Configruation directory missing. System cannot continue.\n");
+		sysfail();
+	}
 	_proceedFile(reso,"users.conf",tmp);
 //	FileA(sysroot,"/etc","users.conf",tmp);
 }
@@ -1650,7 +1655,7 @@ int shell(void) {
 vector<string> global_pw;
 
 int reb_initalize(void) {
-	if (!isSubdirExistsA(sysroot,"/","etc") || !isFileExistsA(sysroot,"/etc","filesys.conf") || !isFileExistsA(sysroot,"/etc","filesys.conf")) {
+	if (!isSubdirExistsA(sysroot,"/","etc") || !isFileExistsA(sysroot,"/etc","filesys.conf") || !isFileExistsA(sysroot,"/etc","users.conf")) {
 		printf("\n\nSystem configruation is missing\nPress any key to restart");
 		getch(); 
 		return 1;
