@@ -1303,6 +1303,7 @@ int peset(int argc, vector<string> argv) {
 		r.appalist[packname].install_stat = true;//INSTALLED!!!
 	}
 	ac.erase("user"); ac.erase("pe"); 
+	_call_chroot("2");
 	// Prepare for reboot
 	clear();
 	_disprog(2);
