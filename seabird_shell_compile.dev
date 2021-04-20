@@ -33,20 +33,20 @@ UnitCount=10
 
 [VersionInfo]
 Major=4
-Minor=1
-Release=0
-Build=266
+Minor=2
+Release=1
+Build=269
 LanguageID=1033
 CharsetID=1252
 CompanyName=
-FileVersion=4.1.0.266
+FileVersion=4.2.1.269
 FileDescription=
 InternalName=
 LegalCopyright=
 LegalTrademarks=
 OriginalFilename=
 ProductName=Seabird Galactic Shell
-ProductVersion=4.1.0.266
+ProductVersion=4.2.1.269
 AutoIncBuildNr=1
 SyncProduct=1
 
