@@ -1297,11 +1297,12 @@ int peset(int argc, vector<string> argv) {
 			}
 			setColor("07");
 			cout << endl;
-			Sleep(1000);
+		//	Sleep(1000);
 			sum++;
 		}
 		r.appalist[packname].install_stat = true;//INSTALLED!!!
 	}
+	ac.erase("user"); ac.erase("pe"); 
 	// Prepare for reboot
 	clear();
 	_disprog(2);
