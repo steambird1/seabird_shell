@@ -12,6 +12,8 @@ struct account {
 	string account_password;
 }; 
 
+typedef map<string,account> acclist;
+
 // Supporting for map
 bool operator < (account a,account b) {
 	if (a.account_premission==b.account_premission) {
@@ -19,8 +21,6 @@ bool operator < (account a,account b) {
 	}
 	return a.account_premission < b.account_premission; 
 }
-
-typedef map<string,account> acclist;
 
 account _createAccount(string name,int permission,string passwd) {
 	account c;
@@ -32,9 +32,13 @@ account getAdminInfo() {
 	return _createAccount("admin",1,"admin");
 } 
 
+account getSystem() {
+	return _createAccount("system",1,"\a"); // I think you can't input '\a'.
+}
+
 acclist getAccounts() {
 	acclist c;
-	c["system"]=_createAccount("system",1,"\a"); // I think you can't input '\a'.
+	c["system"]=getSystem();
 	c["admin"]=getAdminInfo();
 	c["user"]=_createAccount("user",0,"");
 	return c;

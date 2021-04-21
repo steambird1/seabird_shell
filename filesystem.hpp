@@ -271,7 +271,7 @@ inline int SGProceedFileA(fdirnode *root, const string path, const string file_n
 }
 
 int SGCreateFile(fdirnode *father,const string file_name,const string file_content,account curlogin) {
-	if (isNotHavingPerm(*father,curlogin,"",2) && father->files.count(file_name)) return 0; // ONLY GETTING PERMISSION IF EXIST
+	if (isNotHavingPerm(*father,curlogin,"",2)) return 0; // ONLY GETTING PERMISSION IF EXIST
 	if (isFileExists(file_name,father)) return 0;
 	SGProceedFile(father,file_name,file_content,curlogin);
 	father->files[file_name].second[curlogin]=CREATE_PERM;
@@ -417,6 +417,7 @@ inline int SGRmFileA(fdirnode *root,const string path,const string filename,acco
 #define listFileA(root,path,mode) SGListFileA(root,path,mode,curlogin)
 #define getFileLength(dir,fn) SGGetFileLength(dir,fn,curlogin)
 #define getFileLengthA(root,path,fn) SGGetFileLengthA(root,path,fn,curlogin)
+#define _proceedFile(father,file_name,file_content) SGProceedFile(father,file_name,file_content,curlogin) 
 
 
 // I see we need to initalize root.

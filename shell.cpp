@@ -1107,7 +1107,7 @@ int pare(int argc, vector<string> argv) {
 		for (vector<partition*>::iterator i = d.partsz.begin(); i != d.partsz.end(); i++) {
 			if ((*i)->parname == target) {
 				d.partsz[target]->formatted = true;
-				map<string,string> emptyfiles;
+				map<string,pair<string,permission> > emptyfiles;
 				map<string,fdirnode*> emptydirnode;
 				emptydirnode["."]=d.partsz[target]->proot;
 				emptydirnode[".."]=d.partsz[target]->proot->parent;
@@ -1531,7 +1531,7 @@ void initalize(string fn) {
 	r=getDefaultAppacks();
 }
 
-#define KERNEL_VER "5.0.0.270 Alpha"
+#define KERNEL_VER "5.0.0.281 Alpha"
 
 #if defined(__ia64) || defined(__itanium__) || defined(_M_IA64)
 #define SYS_ARCH "IA64"
@@ -1589,6 +1589,7 @@ void login(void) {
 #define SESH_VER "4.2"
 
 vector<string> e_arg; 
+account prevlogin;
 
 int shell(void) {
 	if (appmode == 0) printf("Welcome, %s\n",curlogin.account_name.c_str());
@@ -1606,13 +1607,16 @@ int shell(void) {
 		//fgets(s,2048,stdin);
 		//cmd = s;
 		if (appmode == 0 && cmd=="logout") {
-			elevstack = 0; 
-			return 2;
+			if (elevstack) {
+				printf("logout: Cannot exit shell: using 'exit'\n");
+				continue;
+			} else return 2;
 		}
 		if (appmode == 0 && cmd=="exit") {
 			if (elevstack && appmode == 0) {
 				elevstack--;
-				env_user = curlogin.account_name;
+				curlogin = prevlogin;
+				env_user = curlogin.account_name; 
 				continue;
 			}
 			else return 2;
@@ -1640,6 +1644,8 @@ int shell(void) {
 				} while (1);
 				elevstack = 1;
 				env_user = ac["admin"].account_name;
+				prevlogin = curlogin;
+				curlogin = ac["admin"];
 			} else if (curlogin.account_premission > 0) {
 				printf("Already in administrator\n");
 			} else if (elevstack == 0) {
@@ -1717,6 +1723,7 @@ int main(int argc, char* argv[]) {
 	// debugging management
 	// -end-
 	systartz: clear();
+	ac["system"]=getSystem();
 	printf("Seabird Galactic OS\nVersion %s on %s\n\nLoading ...\n",KERNEL_VER,SYS_ARCH);
 	if (!ac.count("system")) {
 		printf("Cannot start system session. System halted.");

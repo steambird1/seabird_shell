@@ -5,19 +5,19 @@
 #define SEABIRD_SHELL_COMPILE_PRIVATE_H
 
 /* VERSION DEFINITIONS */
-#define VER_STRING	"4.2.1.269"
-#define VER_MAJOR	4
-#define VER_MINOR	2
-#define VER_RELEASE	1
-#define VER_BUILD	269
+#define VER_STRING	"5.0.0.280"
+#define VER_MAJOR	5
+#define VER_MINOR	0
+#define VER_RELEASE	0
+#define VER_BUILD	280
 #define COMPANY_NAME	""
-#define FILE_VERSION	"4.2.1.269"
+#define FILE_VERSION	"5.0.0.280"
 #define FILE_DESCRIPTION	""
 #define INTERNAL_NAME	""
 #define LEGAL_COPYRIGHT	""
 #define LEGAL_TRADEMARKS	""
 #define ORIGINAL_FILENAME	""
 #define PRODUCT_NAME	"Seabird Galactic Shell"
-#define PRODUCT_VERSION	"4.2.1.269"
+#define PRODUCT_VERSION	"5.0.0.280"
 
 #endif /*SEABIRD_SHELL_COMPILE_PRIVATE_H*/
