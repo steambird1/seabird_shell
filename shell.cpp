@@ -1531,7 +1531,7 @@ void initalize(string fn) {
 	r=getDefaultAppacks();
 }
 
-#define KERNEL_VER "4.2.1.269"
+#define KERNEL_VER "5.0.0.270 Alpha"
 
 #if defined(__ia64) || defined(__itanium__) || defined(_M_IA64)
 #define SYS_ARCH "IA64"
@@ -1715,11 +1715,14 @@ int reb_initalize(void) {
 
 int main(int argc, char* argv[]) {
 	// debugging management
-	extcall["printf"]="echo";
-	extcall["greet"]="echo hello world";
 	// -end-
 	systartz: clear();
-	printf("Seabird Galactic OS\nVersion %s on %s\n\nLoading ...",KERNEL_VER,SYS_ARCH);
+	printf("Seabird Galactic OS\nVersion %s on %s\n\nLoading ...\n",KERNEL_VER,SYS_ARCH);
+	if (!ac.count("system")) {
+		printf("Cannot start system session. System halted.");
+		sysfail();
+	}
+	curlogin = ac["system"];
 	if (argc >= 2) {
 		string a1;// = "pesetup";
 //	if (true) {
@@ -1737,7 +1740,9 @@ int main(int argc, char* argv[]) {
 			break;
 	}
 	logz: login();
-	switch (shell()) {
+	int she = shell();
+	curlogin = ac["system"];
+	switch (she) {
 		case 0:
 			syssync();
 			return 0;
