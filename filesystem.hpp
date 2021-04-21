@@ -270,6 +270,14 @@ inline int SGProceedFileA(fdirnode *root, const string path, const string file_n
 	return SGProceedFile(resolve(path,root),file_name,file_content,curlogin);
 }
 
+// New Feature: Set Permission (Requires Write and Special (1))
+int SGSetPermission(fdirnode *father,const string file_name,int permission,account curlogin) {
+	if (!isFileExists(file_name,father)) return 0;
+	if (isNotHavingPerm(*father,curlogin,file_name,3)) return 0;
+	father->files[file_name].second[curlogin]=permission;
+	return 1;
+}
+
 int SGCreateFile(fdirnode *father,const string file_name,const string file_content,account curlogin) {
 	if (isNotHavingPerm(*father,curlogin,"",2)) return 0; // ONLY GETTING PERMISSION IF EXIST
 	if (isFileExists(file_name,father)) return 0;
@@ -390,6 +398,10 @@ inline int SGRmDirA(fdirnode *root,const string path,account curlogin) {
 
 inline int SGRmFileA(fdirnode *root,const string path,const string filename,account curlogin) {
 	return SGRmFile(resolve(path,root),filename,curlogin);
+}
+
+inline int SGSetPermissionA(fdirnode *root,const string path,const string filename,int permission,account curlogin) {
+	return SGSetPermission(resolve(path,root),filename,permission,curlogin);
 }
 
 // for more

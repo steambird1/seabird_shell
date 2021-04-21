@@ -816,8 +816,13 @@ int write(int argc, vector<string> argv) {
 	if ((!override) && isFileExistsA(root,cdr,fn)) dat = readFileA(root,cdr,fn);
 	if ((override&&argc>=4)||(argc>=3)) for (vector<string>::iterator i = argv.begin()+int(override)+2; i != argv.end(); i++) dat = dat + (*i) + " ";
 	dat = dat + "\n";
-	_proceedFile(resolve(cdr,root),fn,dat);
-	return !isFileExistsA(root,"/",fn);
+	//_proceedFile(resolve(cdr,root),fn,dat);
+	if (!isFileExistsA(root,cdr,fn)) {
+		return SGCreateFileA(root,cdr,fn,dat,curlogin);
+	} else {
+		return SGModifyFileA(root,cdr,fn,dat,curlogin);
+	}
+	return 0;
 }
 
 int type(int argc, vector<string> argv) {
@@ -1381,6 +1386,23 @@ int usermon(int argc, vector<string> argv) {
 	}
 } 
 
+int perms(int argc, vector<string> argv) {
+	if (argc < 2) {
+		cout << cdir << "    " << isHavePerm(*(resolve(cdir,root)),curlogin,"") << endl;
+	} else {
+		string rf = getRealFirst(argv[1]), rl = getRealLast(argv[1]);
+		cout << rf << "/" << rl << "    ";
+		if (isSubdirExistsA(root,rf,rl)) {
+			cout << isHavePerm(*(resolve(cdir,root)),curlogin,"") << endl;
+		} else if (isFileExistsA(root,rf,rl)) {
+			cout << isHavePerm(*(resolve(cdir,root)),curlogin,rl) << endl;
+		} else {
+			cout << "File not exist" << endl;
+			return 1;
+		}
+	}
+}
+
 int syncs(int argc, vector<string> argv) {
 	vector<string> vlines;
 	vector<string> vargs;
@@ -1487,6 +1509,7 @@ void initalize(string fn) {
 	f["user"]=usermon;
 	f["sync"]=syncs;
 	f["blue"]=blue;
+	f["perm"]=perms;
 	d = createDisk(104857600);
 	createPartition(&d,-1,327680);//reserved
 	if (appmode == 0) ac=getAccounts();
@@ -1531,7 +1554,7 @@ void initalize(string fn) {
 	r=getDefaultAppacks();
 }
 
-#define KERNEL_VER "5.0.0.281 Alpha"
+#define KERNEL_VER "5.0.0.300 Alpha"
 
 #if defined(__ia64) || defined(__itanium__) || defined(_M_IA64)
 #define SYS_ARCH "IA64"
