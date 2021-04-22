@@ -816,12 +816,7 @@ int write(int argc, vector<string> argv) {
 	if ((!override) && isFileExistsA(root,cdr,fn)) dat = readFileA(root,cdr,fn);
 	if ((override&&argc>=4)||(argc>=3)) for (vector<string>::iterator i = argv.begin()+int(override)+2; i != argv.end(); i++) dat = dat + (*i) + " ";
 	dat = dat + "\n";
-	//_proceedFile(resolve(cdr,root),fn,dat);
-	if (!isFileExistsA(root,cdr,fn)) {
-		return SGCreateFileA(root,cdr,fn,dat,curlogin);
-	} else {
-		return SGModifyFileA(root,cdr,fn,dat,curlogin);
-	}
+	SGWriteFileA(root,cdr,fn,dat,curlogin); 
 	return 0;
 }
 
@@ -1464,7 +1459,7 @@ void syssync() {
 		printf("Configruation directory missing. System cannot continue.\n");
 		sysfail();
 	}
-	_proceedFile(reso,"users.conf",tmp);
+	SGModifyFile(reso,"users.conf",tmp,ac["system"]);
 //	FileA(sysroot,"/etc","users.conf",tmp);
 }
 

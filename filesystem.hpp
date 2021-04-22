@@ -260,6 +260,7 @@ int SGRenameFolder(fdirnode *old_folder,const string dir_name,account curlogin) 
 	return 1;
 }
 
+// YOU SHOULD NOT CALL THIS DIRECTLY!
 int SGProceedFile(fdirnode *father,const string file_name,const string file_content,account curlogin) {
 	if (isNotHavingPerm(*father,curlogin,file_name,2) && father->files.count(file_name)) return 0;
 	father->files[file_name].first=file_content;
@@ -270,12 +271,17 @@ inline int SGProceedFileA(fdirnode *root, const string path, const string file_n
 	return SGProceedFile(resolve(path,root),file_name,file_content,curlogin);
 }
 
-// New Feature: Set Permission (Requires Write and Special (1))
-int SGSetPermission(fdirnode *father,const string file_name,int permission,account curlogin) {
-	if (!isFileExists(file_name,father)) return 0;
-	if (isNotHavingPerm(*father,curlogin,file_name,3)) return 0;
-	father->files[file_name].second[curlogin]=permission;
-	return 1;
+// New Feature: Set Permission (Requires Write)
+int SGSetPermission(fdirnode *father,const string file_name,int perm,account setting,account curlogin) {
+	if (file_name != "" && !isFileExists(file_name,father)) return 0;
+	if (isNotHavingPerm(*father,curlogin,file_name,2)) return 0; // Does not need write now
+	if (file_name == "") {
+		father->dir_perm[setting]=perm;
+		return father->dir_perm[setting];
+	} else {
+		father->files[file_name].second[setting]=perm;
+		return father->files[file_name].second[setting];
+	}
 }
 
 int SGCreateFile(fdirnode *father,const string file_name,const string file_content,account curlogin) {
@@ -346,7 +352,19 @@ vector<string> SGListFile(fdirnode *rootdir,const int mode,account curlogin) {
 	return tresult;
 }
 
-// At this moment, we need a "root" node.
+inline int SGWriteFile(fdirnode *root,const string file_name,const string file_content,account curlogin) {
+	if (!isFileExists(file_name,root)) {
+		return SGCreateFile(root,file_name,file_content,curlogin);
+	} else {
+		return SGModifyFile(root,file_name,file_content,curlogin);
+	}
+}
+
+// some easier call using root node
+
+inline int SGWriteFileA(fdirnode *root,const string folder_path,const string file_name,const string file_content,account curlogin) {
+	return SGWriteFile(resolve(folder_path,root),file_name,file_content,curlogin);
+}
 
 inline int SGGetFileLengthA(fdirnode *root,const string folder_path,const string dir_name,account curlogin) {
 	return SGGetFileLength(resolve(folder_path,root),dir_name,curlogin);
@@ -400,8 +418,8 @@ inline int SGRmFileA(fdirnode *root,const string path,const string filename,acco
 	return SGRmFile(resolve(path,root),filename,curlogin);
 }
 
-inline int SGSetPermissionA(fdirnode *root,const string path,const string filename,int permission,account curlogin) {
-	return SGSetPermission(resolve(path,root),filename,permission,curlogin);
+inline int SGSetPermissionA(fdirnode *root,const string path,const string filename,int perm,account setting,account curlogin) {
+	return SGSetPermission(resolve(path,root),filename,perm,setting,curlogin);
 }
 
 // for more
@@ -429,7 +447,7 @@ inline int SGSetPermissionA(fdirnode *root,const string path,const string filena
 #define listFileA(root,path,mode) SGListFileA(root,path,mode,curlogin)
 #define getFileLength(dir,fn) SGGetFileLength(dir,fn,curlogin)
 #define getFileLengthA(root,path,fn) SGGetFileLengthA(root,path,fn,curlogin)
-#define _proceedFile(father,file_name,file_content) SGProceedFile(father,file_name,file_content,curlogin) 
+#define _proceedFile(father,file_name,file_content) SGWriteFile(father,file_name,file_content,curlogin) 
 
 
 // I see we need to initalize root.
