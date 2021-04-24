@@ -1,5 +1,6 @@
 *.gch
 *.exe
+*.test.*
 *.o
 gmon.out
 shell.exe

@@ -6,6 +6,8 @@
 #include <map>
 #include <string>
 #include <cstdio>
+#include <bits/stl_pair.h>
+#include "accounts.hpp"
 using namespace std;
 
 #ifndef _SG_FILESYSTEM
@@ -13,14 +15,49 @@ using namespace std;
 
 #define _SG_FSVER 202101L
 
+#define P_READ 4
+#define P_WRITE 2
+#define P_EXEC 1
+
+// First, administrator always have highest permission (7).
+// Second, creater always have highest permission (7), and others will be 4.
+
+#define ADMIN_PERM 7
+#define CREATE_PERM 7
+#define DEFAULT_PERM 4
+
+
+
+typedef map<account,int> permission;
+
 struct fdirnode {
 	string this_name;
 	fdirnode *parent;
+	map<account,int> dir_perm;
 	map<string,fdirnode*> subdir;
-	map<string,string> files;
+	map<string,pair<string,map<account,int> > > files;
 	bool delete_symbol;
 	int *_resv_filesize;
 };
+
+int isHavePerm(fdirnode dn, account ac, string pcd_file) {
+	if (ac.account_premission > 0) return ADMIN_PERM; 
+	if (pcd_file == "") {
+		if (dn.parent==NULL) return CREATE_PERM; // everyone can change root! 
+		if (dn.dir_perm.count(ac)) return dn.dir_perm[ac];
+		else return DEFAULT_PERM;
+	} else {
+		if (dn.files.count(pcd_file)) {
+			if (dn.files[pcd_file].second.count(ac)) return dn.files[pcd_file].second[ac];
+			else return DEFAULT_PERM; 
+		} else {
+			return 0; // you must have no permission
+		}
+	}
+}
+inline bool isNotHavingPerm(fdirnode dn, account ac, string pcd_file, int perm) {
+	return !(isHavePerm(dn,ac,pcd_file)&perm);
+}
 
 fdirnode createFNode(const string dir_name, fdirnode *tparent) {
 	fdirnode f;
@@ -35,7 +72,6 @@ fdirnode* newFNode(const string dir_name, fdirnode *tparent) {
 	f->this_name=dir_name;
 	f->parent=tparent;
 	f->delete_symbol=false;
-	f->_resv_filesize=tparent->_resv_filesize;
 	map<string,fdirnode*> mf;
 	mf["."]=f;
 	mf[".."]=tparent;
@@ -167,24 +203,17 @@ void cleanup(fdirnode *dnode) {
  * actually, It'll do cleanup.
 */
 
-void rmDir(fdirnode *fd) {
+int SGRmDir(fdirnode *fd, account curlogin) {
+	if (isNotHavingPerm(*fd,curlogin,"",2)) return 0;
 	fd->delete_symbol = true;
 	cleanup(fd->parent);
+	return 1;
 }
 
-/*
- * actually, you should run like dir=rmfile(dir,filename) to complete deletion.
-*/
-int rmFile(fdirnode *dir,const string filename) {
+int SGRmFile(fdirnode *dir,const string filename,account curlogin) {
 	if (!isFileExists(filename,dir)) return 0;
-	fdirnode f;
-	f = createFNode(dir->this_name,dir->parent);
-	f.subdir=dir->subdir;
-	map<string,string> nf;
-	nf = dir->files;
-	nf.erase(filename);
-	f.files=nf;
-	*dir = f;
+	if (isNotHavingPerm(*dir,curlogin,filename,2)) return 0;
+	dir->files.erase(filename);
 	return 1;
 }
 /*
@@ -212,14 +241,17 @@ int pullDir(fdirnode *father, fdirnode *son) {
 // As this algorithm I can only return an address.
 // return: created folder node.
 
-fdirnode* createFolder(fdirnode *father,const string dir_name) {
+fdirnode* SGCreateFolder(fdirnode *father,const string dir_name,account curlogin) {
+	if (isNotHavingPerm(*father,curlogin,"",2)) return NULL;
 	fdirnode *f;
 	f = newFNode(dir_name,father);
+	f->dir_perm[curlogin]=CREATE_PERM;
 	pullDir(father,f);
 	return f;
 } 
 
-int renameFolder(fdirnode *old_folder,const string dir_name) {
+int SGRenameFolder(fdirnode *old_folder,const string dir_name,account curlogin) {
+	if (isNotHavingPerm(*old_folder,curlogin,"",2)) return 0;
 	if (dir_name=="") return 0;
 	map<string,fdirnode*> am;
 	am = old_folder->parent->subdir;
@@ -230,63 +262,85 @@ int renameFolder(fdirnode *old_folder,const string dir_name) {
 	return 1;
 }
 
-void _proceedFile(fdirnode *father,const string file_name,const string file_content) {
-/*	fdirnode f;
-	f = createFNode(father->this_name,father->parent);
-	f.subdir=father->subdir;
-	map<string,string> fdr;
-	fdr = father->files;
-	fdr[file_name] = file_content;
-	f.files = fdr;
-	*father = f;*/
-	father->files[file_name]=file_content;
+// YOU SHOULD NOT CALL THIS DIRECTLY!
+int SGProceedFile(fdirnode *father,const string file_name,const string file_content,account curlogin) {
+	if (isNotHavingPerm(*father,curlogin,file_name,2) && father->files.count(file_name)) return 0;
+	father->files[file_name].first=file_content;
+	return 1;
 }
 
-int createFile(fdirnode *father,const string file_name,const string file_content) {
+inline int SGProceedFileA(fdirnode *root, const string path, const string file_name,const string file_content, account curlogin) {
+	return SGProceedFile(resolve(path,root),file_name,file_content,curlogin);
+}
+
+// New Feature: Set Permission (Requires Write)
+// But I can only do like a macro...
+
+int SGSetPermission(fdirnode *father,const string file_name,int perm,account setting,account curlogin) {
+	if (file_name != "" && !isFileExists(file_name,father)) return 0;
+	if (isNotHavingPerm(*father,curlogin,file_name,2)) return 0;
+	if (file_name == "") {
+		father->dir_perm[setting]=perm;
+//		return father->dir_perm;
+	} else {
+		father->files[file_name].second[setting]=perm;
+//		return father->files[file_name].second;
+	}
+}
+
+int SGCreateFile(fdirnode *father,const string file_name,const string file_content,account curlogin) {
+	if (isNotHavingPerm(*father,curlogin,"",2)) return 0; // ONLY GETTING PERMISSION IF EXIST
 	if (isFileExists(file_name,father)) return 0;
-	_proceedFile(father,file_name,file_content);
+	SGProceedFile(father,file_name,file_content,curlogin);
+	father->files[file_name].second[curlogin]=CREATE_PERM;
 	return 1;
 }
 
 // Modify file
-int modifyFile(fdirnode *dir,const string file_name,const string file_content) {
+int SGModifyFile(fdirnode *dir,const string file_name,const string file_content,account curlogin) {
+	if (isNotHavingPerm(*dir,curlogin,file_name,2)) return 0;
 	if (!isFileExists(file_name,dir)) return 0;
-	_proceedFile(dir,file_name,file_content);
+	SGProceedFile(dir,file_name,file_content,curlogin);
 	return 1;
 }
 
 // We need read file...
 // currently I can only write this. You can just use sscanf() to do something.
-string readFile(fdirnode *dir,const string file_name) {
+string SGReadFile(fdirnode *dir,const string file_name,account curlogin) {
+	if (isNotHavingPerm(*dir,curlogin,file_name,4)) return "";
 	if (!isFileExists(file_name,dir)) return "";
-	return dir->files[file_name];
+	return dir->files[file_name].first;
 }
 
-int getFileLength(fdirnode *dir,const string file_name) {
+int SGGetFileLength(fdirnode *dir,const string file_name,account curlogin) {
+	if (isNotHavingPerm(*dir,curlogin,file_name,4)) return 0;
 	if (!isFileExists(file_name,dir)) return -1;
-	return readFile(dir,file_name).length();
+	return SGReadFile(dir,file_name,curlogin).length();
 }
 
 // actually we need to move file and copy file.
 // ! It'll override target if target exists!!
-int copyFile(fdirnode *source_dir,const string source_filename,fdirnode *dest_dir,const string dest_filename) {
+int SGCopyFile(fdirnode *source_dir,const string source_filename,fdirnode *dest_dir,const string dest_filename,account curlogin) {
 	if (!isFileExists(source_filename,source_dir)) return 0;
-	_proceedFile(dest_dir,dest_filename,readFile(source_dir,source_filename));
+	if (isNotHavingPerm(*source_dir,curlogin,source_filename,4)) return 0;
+	if (isNotHavingPerm(*dest_dir,curlogin,"",2)) return 0;
+	SGProceedFile(dest_dir,dest_filename,SGReadFile(source_dir,source_filename,curlogin),curlogin);
 	return 1;
 }
 
-int moveFile(fdirnode *source_dir,const string source_filename,fdirnode *dest_dir,const string dest_filename) {
+int SGMoveFile(fdirnode *source_dir,const string source_filename,fdirnode *dest_dir,const string dest_filename,account curlogin) {
 	if (!isFileExists(source_filename,source_dir)) return 0;
-	_proceedFile(dest_dir,dest_filename,readFile(source_dir,source_filename));
-	return rmFile(source_dir,source_filename);
+	SGProceedFile(dest_dir,dest_filename,SGReadFile(source_dir,source_filename,curlogin),curlogin);
+	return SGRmFile(source_dir,source_filename,curlogin);
 }
 
 // Also, we need to list files likes DIR or LS.
 #define LIST_DIR 1
 #define LIST_FILE 2
 
-vector<string> listFile(fdirnode *rootdir,const int mode) {
+vector<string> SGListFile(fdirnode *rootdir,const int mode,account curlogin) {
 	vector<string> tresult;
+	if (isNotHavingPerm(*rootdir,curlogin,"",4)) return tresult; // means a empty vector
 	if (mode&1) {
 		map<string,fdirnode*>::iterator i;
 		for (i = rootdir->subdir.begin(); i != rootdir->subdir.end(); i++) {
@@ -294,7 +348,7 @@ vector<string> listFile(fdirnode *rootdir,const int mode) {
 		}
 	}
 	if (mode&2) {
-		map<string,string>::iterator i;
+		map<string,pair<string,permission> >::iterator i;
 		for (i = rootdir->files.begin(); i != rootdir->files.end(); i++) {
 			tresult.push_back(i->first);
 		}
@@ -302,42 +356,54 @@ vector<string> listFile(fdirnode *rootdir,const int mode) {
 	return tresult;
 }
 
-// At this moment, we need a "root" node.
-
-inline int getFileLengthA(fdirnode *root,const string folder_path,const string dir_name) {
-	return getFileLength(resolve(folder_path,root),dir_name);
+inline int SGWriteFile(fdirnode *root,const string file_name,const string file_content,account curlogin) {
+	if (!isFileExists(file_name,root)) {
+		return SGCreateFile(root,file_name,file_content,curlogin);
+	} else {
+		return SGModifyFile(root,file_name,file_content,curlogin);
+	}
 }
 
-inline int renameFolderA(fdirnode *root,const string folder_path,const string dir_name) {
-	return renameFolder(resolve(folder_path,root),dir_name);
+// some easier call using root node
+
+inline int SGWriteFileA(fdirnode *root,const string folder_path,const string file_name,const string file_content,account curlogin) {
+	return SGWriteFile(resolve(folder_path,root),file_name,file_content,curlogin);
 }
 
-inline int copyFileA(fdirnode *root, const string source_path, const string source_filename, const string dest_path, const string dest_filename) {
-	return copyFile(resolve(source_path,root),source_filename,resolve(dest_path,root),dest_filename);
+inline int SGGetFileLengthA(fdirnode *root,const string folder_path,const string dir_name,account curlogin) {
+	return SGGetFileLength(resolve(folder_path,root),dir_name,curlogin);
 }
 
-inline int moveFileA(fdirnode *root, const string source_path, const string source_filename, const string dest_path, const string dest_filename) {
-	return moveFile(resolve(source_path,root),source_filename,resolve(dest_path,root),dest_filename);
+inline int SGRenameFolderA(fdirnode *root,const string folder_path,const string dir_name,account curlogin) {
+	return SGRenameFolder(resolve(folder_path,root),dir_name,curlogin);
 }
 
-inline vector<string> listFileA(fdirnode *root,const string path,const int mode) {
-	return listFile(resolve(path,root),mode);
+inline int SGCopyFileA(fdirnode *root, const string source_path, const string source_filename, const string dest_path, const string dest_filename,account curlogin) {
+	return SGCopyFile(resolve(source_path,root),source_filename,resolve(dest_path,root),dest_filename,curlogin);
 }
 
-inline string readFileA(fdirnode *root,const string path,const string file_name) {
-	return readFile(resolve(path,root),file_name);
+inline int SGMoveFileA(fdirnode *root, const string source_path, const string source_filename, const string dest_path, const string dest_filename,account curlogin) {
+	return SGMoveFile(resolve(source_path,root),source_filename,resolve(dest_path,root),dest_filename,curlogin);
 }
 
-inline int createFileA(fdirnode *root,const string path,const string file_name,const string file_content) {
-	return createFile(resolve(path,root),file_name,file_content);
+inline vector<string> SGListFileA(fdirnode *root,const string path,const int mode,account curlogin) {
+	return SGListFile(resolve(path,root),mode,curlogin);
 }
 
-inline int modifyFileA(fdirnode *root,const string path,const string file_name,const string file_content) {
-	return modifyFile(resolve(path,root),file_name,file_content);
+inline string SGReadFileA(fdirnode *root,const string path,const string file_name,account curlogin) {
+	return SGReadFile(resolve(path,root),file_name,curlogin);
 }
 
-inline fdirnode* createFolderA(fdirnode *root,const string path,const string dir_name) {
-	return createFolder(resolve(path,root),dir_name);
+inline int SGCreateFileA(fdirnode *root,const string path,const string file_name,const string file_content,account curlogin) {
+	return SGCreateFile(resolve(path,root),file_name,file_content,curlogin);
+}
+
+inline int SGModifyFileA(fdirnode *root,const string path,const string file_name,const string file_content,account curlogin) {
+	return SGModifyFile(resolve(path,root),file_name,file_content,curlogin);
+}
+
+inline fdirnode* SGCreateFolderA(fdirnode *root,const string path,const string dir_name,account curlogin) {
+	return SGCreateFolder(resolve(path,root),dir_name,curlogin);
 }
 
 inline bool isFileExistsA(fdirnode *root,const string path,const string dirname) {
@@ -348,13 +414,54 @@ inline bool isSubdirExistsA(fdirnode *root,const string path,const string dirnam
 	return isSubdirExists(dirname,resolve(path,root));
 }
 
-inline void rmDirA(fdirnode *root,const string path) {
-	rmDir(resolve(path,root));
+inline int SGRmDirA(fdirnode *root,const string path,account curlogin) {
+	return SGRmDir(resolve(path,root),curlogin);
 }
 
-inline int rmFileA(fdirnode *root,const string path,const string filename) {
-	return rmFile(resolve(path,root),filename);
+inline int SGRmFileA(fdirnode *root,const string path,const string filename,account curlogin) {
+	return SGRmFile(resolve(path,root),filename,curlogin);
 }
+
+inline int SGSetPermissionA(fdirnode *root,const string path,const string filename,int perm,account setting,account curlogin) {
+	return SGSetPermission(resolve(path,root),filename,perm,setting,curlogin);
+}
+
+inline int isHavePermA(fdirnode *root,const string path,account query,const string filename) {
+	return isHavePerm(*resolve(path,root),query,filename);
+}
+
+inline int isNotHavingPermA(fdirnode *root,const string path,account query,const string filename,int perm) {
+	return isNotHavingPerm(*resolve(path,root),query,filename,perm); 
+}
+
+
+// for more
+// they are deprecated by security problem and you should NOT use them anymore.
+
+#define rmDir(fd) SGRmDir(fd,curlogin)
+#define rmDirA(root,path) SGRmDirA(root,path,curlogin)
+#define rmFile(fd,name) SGRmFile(fd,name,curlogin)
+#define rmFileA(root,path,name) SGRmFileA(root,path,name,curlogin)
+#define createFolder(father,dirname) SGCreateFolder(father,dirname,curlogin)
+#define createFolderA(root,path,dirname) SGCreateFolderA(root,path,dirname,curlogin)
+#define renameFolder(old_folder,dirname) SGRenameFolder(old_folder,dirname,curlogin)
+#define renameFolderA(root,path,dirname) SGRenameFolderA(root,path,dirname,curlogin)
+#define createFile(father,name,content) SGCreateFile(father,name,content,curlogin)
+#define createFileA(root,path,name,content) SGCreateFileA(root,path,name,content,curlogin)
+#define modifyFile(dir,filename,filecontent) SGModifyFile(dir,filename,filecontent,curlogin)
+#define modifyFileA(root,path,filename,filecontent) SGModifyFileA(root,path,filename,filecontent,curlogin)
+#define readFile(father,name) SGReadFile(father,name,curlogin)
+#define readFileA(root,path,name) SGReadFileA(root,path,name,curlogin)
+#define copyFile(sd,sf,dd,df) SGCopyFile(sd,sf,dd,df,curlogin)
+#define copyFileA(root,sp,sf,dp,df) SGCopyFileA(root,sp,sf,dp,df,curlogin)
+#define moveFile(sd,sf,dd,df) SGMoveFile(sd,sf,dd,df,curlogin)
+#define moveFileA(root,sp,sf,dp,df) SGMoveFileA(root,sp,sf,dp,df,curlogin)
+#define listFile(rd,mode) SGListFile(rd,mode,curlogin)
+#define listFileA(root,path,mode) SGListFileA(root,path,mode,curlogin)
+#define getFileLength(dir,fn) SGGetFileLength(dir,fn,curlogin)
+#define getFileLengthA(root,path,fn) SGGetFileLengthA(root,path,fn,curlogin)
+#define _proceedFile(father,file_name,file_content) SGWriteFile(father,file_name,file_content,curlogin) 
+
 
 // I see we need to initalize root.
 void rootInit(fdirnode *root,int filesize) {

@@ -222,6 +222,10 @@ int blue(int argc, vector<string> argv) {
 		if (!isFileExistsA(root,getRealFirst(argv[1]),getRealLast(argv[1]))) {
 			cout << "Specified file does not exist" << endl;
 			return -2;
+		} else if (isNotHavingPermA(root,getRealFirst(argv[1]),curlogin,getRealLast(argv[1]),5)) {
+			// Requires execution permission too.
+			cout << "blue: Permission denied" << endl;
+			return -5;
 		} else {
 			clock_t begin = clock(), end;
 			int ret = runCode(readFileA(root,getRealFirst(argv[1]),getRealLast(argv[1])));
@@ -240,7 +244,7 @@ int sword(int argc, vector<string> argv) {
 	}
 	if (!r.appalist["seabird-galactic-wordpad"].install_stat) {
 		cout << "Bad command" << endl << endl << "You can install it by typing:" << endl << "apack seabird-galactic-wordpad" << endl << endl;//require re-compile
-		return -1;
+		return 65535; // not -1 for another "Bad Command"
 	}
 	string pathopen = "", fnopen = "";
 	if (argc < 2) {
@@ -252,7 +256,14 @@ int sword(int argc, vector<string> argv) {
 	if (!isFileExistsA(root,pathopen,fnopen)) {
 		//cout << "Specified file does not exist" << endl;
 		//return 2;
-		createFileA(root,pathopen,fnopen,"");
+		
+		if (createFileA(root,pathopen,fnopen,"")==0) {
+			cout << "wordpad: Permission denied" << endl;
+			return 5; 
+		}
+	} else if (isNotHavingPermA(root,pathopen,curlogin,fnopen,6)) {
+		cout << "wordpad: Permission denied" << endl;
+		return 5;
 	}
 	string fs = swAppMain(readFileA(root,pathopen,fnopen));
 	if (fs != "") modifyFileA(root,pathopen,fnopen,fs);
@@ -274,6 +285,9 @@ int seditor(int argc, vector<string> argv) {
 			cout << "Specified file does not exist" << endl;
 			pathopen = "";
 			fnopen = "";
+		} else if (isNotHavingPermA(root,pathopen,curlogin,fnopen,6)) {
+			cout << "sedit: Permission denied" << endl;
+			return 555;
 		} else {
 			buf = spiltLines(readFileA(root,pathopen,fnopen));
 		}
@@ -463,6 +477,11 @@ int runscript(int argc, vector<string> argv) {
 		cout << "File not exist" << endl;
 		return 1;
 	}
+	if (isNotHavingPermA(root,cdr,curlogin,fn,5)) {
+		// Requires execution permission!
+		cout << "run: Permission denied" << endl;
+		return 3;
+	} 
 	runfile(root,cdr,fn);
 	return 0;
 } 
@@ -579,14 +598,18 @@ int notepad(int argc, vector<string> argv) {
 		cout << "This program cannot be run under PE environment" << endl;
 		return 99;
 	}
-	string cdr = getRealFirst(argv[1]), arg1 = getRealLast(argv[1]);
 	if (argc < 2) {
 		cout << "Required parameter missing" << endl;
 		return 1;
-	}
+	}//minor bug fixes
+	string cdr = getRealFirst(argv[1]), arg1 = getRealLast(argv[1]);
 	if (!isFileExistsA(root,cdr,arg1)) {
 		cout << "Specified file not exist" << endl;
 		return 1;
+	}
+	if (isNotHavingPermA(root,cdr,curlogin,arg1,6)) {
+		cout << "edit: Permission denied" << endl;
+		return 5; 
 	}
 	FILE *f;
 	f = fopen(_getTemp().c_str(),"w+");
@@ -689,15 +712,27 @@ int svt(int argc, vector<string> argv) {
 	// svt save [local disk file] (save current root)
 	// svt load [local disk file] (to a new partition)
 	// Use quotes for long path.
+	
 	if (argc < 3) {
 		cout << "Required parameter missing" << endl;
 		return 1;
+	}
+	// load or save requires admin.
+	if (argv[1]=="load" || argv[1]=="save") {
+		if (curlogin.account_premission < 1) {
+			cout << "svt: Permission denied" << endl;
+			return 5;
+		}
 	}
 	if (argv[1]=="import") {
 		if (argc < 4) {
 		cout << "Required parameter missing" << endl;
 		return 1;
 	}
+		if (isNotHavingPermA(root,cdir,curlogin,"",2)) {
+			cout << "svt: Permission denied" << endl;
+			return 5;
+		}
 		if (isFileExistsA(root,cdir,argv[2])) {
 			cout << "Specified file already exists" << endl;
 			return 3;
@@ -728,6 +763,10 @@ int svt(int argc, vector<string> argv) {
 	}
 		if (!isFileExistsA(root,cdir,argv[2])) {
 			cout << "Specified file does not exist" << endl;
+		}
+		if (isNotHavingPermA(root,cdir,curlogin,argv[2],4)) {
+			cout << "svt: Permission denied" << endl;
+			return 5;
 		}
 		FILE *f;
 		int bytes = 0;
@@ -765,6 +804,9 @@ int svt(int argc, vector<string> argv) {
 		}
 		FILE *f;
 		for (int i = 0; i < v.size(); i++) {
+			if (isNotHavingPermA(root,cdir,curlogin,v[i],4)) {
+				cout << "svt: Warning: Permission denied reading " << v[i] << endl;
+			}
 			string buf = readFileA(root,cdir,v[i]), fo = argv[2] + "\\" + v[i];
 			cout << "Outputting " << v[i] << " ( " << buf.length() << " Bytes, " << i + 1 << " of " << v.size() << " ) Byte proceed:           0";
 			int bytes = 0;
@@ -813,11 +855,18 @@ int write(int argc, vector<string> argv) {
 	bool override = false;
 	if (argc >= 2 && argv[1] == "-o") override = true;
 	string dat = "", fn = getRealLast(argv[int(override)+1]),cdr = getRealFirst(argv[int(override)+1]);
-	if ((!override) && isFileExistsA(root,cdr,fn)) dat = readFileA(root,cdr,fn);
+	if ((!override) && isFileExistsA(root,cdr,fn)) {
+		if (isNotHavingPermA(root,cdr,curlogin,fn,6)) {
+			// actually 'write' requires read permission!
+			cout << "put: Permission denied" << endl;
+			return 5;
+		}
+		dat = readFileA(root,cdr,fn);
+	}
 	if ((override&&argc>=4)||(argc>=3)) for (vector<string>::iterator i = argv.begin()+int(override)+2; i != argv.end(); i++) dat = dat + (*i) + " ";
 	dat = dat + "\n";
-	_proceedFile(resolve(cdr,root),fn,dat);
-	return !isFileExistsA(root,"/",fn);
+	SGWriteFileA(root,cdr,fn,dat,curlogin); 
+	return 0;
 }
 
 int type(int argc, vector<string> argv) {
@@ -826,6 +875,10 @@ int type(int argc, vector<string> argv) {
 	if (!isFileExistsA(root,cdr,fn)) {
 		cout << "Specified file does not exist" << endl;
 		return 2;
+	}
+	if (isNotHavingPermA(root,cdr,curlogin,fn,4)) {
+		cout << "cat: Permission denied" << endl;
+		return 5;
 	}
 	cout << readFileA(root,cdr,fn) << endl;
 	return 0;
@@ -848,7 +901,10 @@ int copy(int argc, vector<string> argv) {
 		cout << "Target already exists (for override using '-o')" << endl;
 		return 3;
 	} 
-	copyFileA(root,cdr1,source,cdr2,dest);
+	if (copyFileA(root,cdr1,source,cdr2,dest)==0) {
+		cout << "cp: Permission denied" << endl;
+		return 5; 
+	}
 	return 0;
 }
 int move(int argc, vector<string> argv) {
@@ -868,7 +924,10 @@ int move(int argc, vector<string> argv) {
 		cout << "Target already exists (for override using '-o')" << endl;
 		return 3;
 	} 
-	moveFileA(root,cdr1,source,cdr2,dest);
+	if (moveFileA(root,cdr1,source,cdr2,dest)==0) {
+		cout << "mv: Permission denied" << endl;
+		return 5;
+	}
 	return 0;
 }
 int del(int argc, vector<string> argv) {
@@ -880,6 +939,10 @@ int del(int argc, vector<string> argv) {
 	if (!isFileExistsA(root,cdr,fn)) {
 		cout << "Source file does not exist" << endl;
 		return 2;
+	}
+	if (isNotHavingPermA(root,cdr,curlogin,fn,2)) {
+		cout << "rm: Permission denied" << endl;
+		return 5;
 	}
 	rmFileA(root,cdr,fn);
 }
@@ -920,7 +983,13 @@ int ls(int argc, vector<string> argv) {
 	bool flag = false;
 	string dr = cdir;
 	if (argc >= 2) {
-		if (argc >= 3) dr = getRealDir(argv[2]);
+		if (argc >= 3) {
+			dr = getRealDir(argv[2]);
+		}
+		if (isNotHavingPermA(root,dr,curlogin,"",4)) {
+				cout << "ls: Permission denied" << endl;
+				return 5;
+		}
 		if (argv[1]=="-F") {
 			v = listFileA(root,dr,1);
 			flag = true;
@@ -930,6 +999,10 @@ int ls(int argc, vector<string> argv) {
 		} else {
 			dr = getRealDir(argv[1]);
 		}
+	}
+	if (isNotHavingPermA(root,dr,curlogin,"",4)) {
+		cout << "ls: Permission denied" << endl;
+		return 5;
 	}
 	if (!flag) v = listFileA(root,dr,3);
 	if (v.size()==0) {
@@ -950,6 +1023,10 @@ int mkdir(int argc, vector<string> argv) {
 	if (isSubdirExistsA(root,cdr,fn)) {
 		cout << "Directory already exists" << endl;
 		return 1;
+	}
+	if (isNotHavingPermA(root,cdr,curlogin,"",2)) {
+		cout << "md: Permission denied" << endl;
+		return 5;
 	}
 	createFolderA(root,cdr,fn);
 	return 0;
@@ -993,8 +1070,8 @@ int rd(int argc, vector<string> argv) {
 	string cdr = cdir;
 	if (argc == 2) {
 		cdr = getRealDir(argv[1]);
-		if (cdr=="/") {
-			cout << "Permission denied" << endl;
+		if (cdr=="/" || isNotHavingPermA(root,cdr,curlogin,"",2)) {
+			cout << "rd: Permission denied" << endl;
 			return 1;
 		}
 		if (!isSubdirExistsA(root,getFirst(cdr),getLast(cdr))) {
@@ -1002,8 +1079,8 @@ int rd(int argc, vector<string> argv) {
 			return 2;
 		}
 	} else {
-		if (cdir=="/") {
-			cout << "Permission denied" << endl;
+		if (cdir=="/" || isNotHavingPermA(root,cdir,curlogin,"",2)) {
+			cout << "rd: Permission denied" << endl;
 			return 1;
 		}
 	} 
@@ -1022,8 +1099,8 @@ int ren(int argc, vector<string> argv) {
 	if (argc == 3) {
 		cdr = getRealDir(argv[1]); 
 		nam = argv[2];
-		if (cdr=="/") {
-			cout << "Permission denied" << endl;
+		if (cdr=="/" || isNotHavingPermA(root,cdr,curlogin,"",2)) {
+			cout << "ren: Permission denied" << endl;
 			return 1;
 		} 
 		if (!isSubdirExistsA(root,getFirst(cdr),getLast(cdr))) {
@@ -1031,8 +1108,8 @@ int ren(int argc, vector<string> argv) {
 			return 2;
 		}
 	} else {
-		if (cdir=="/") {
-		cout << "Permission denied" << endl;
+		if (cdir=="/" || isNotHavingPermA(root,cdir,curlogin,"",2)) {
+		cout << "ren: Permission denied" << endl;
 		return 1;
 	}
 	}
@@ -1107,7 +1184,7 @@ int pare(int argc, vector<string> argv) {
 		for (vector<partition*>::iterator i = d.partsz.begin(); i != d.partsz.end(); i++) {
 			if ((*i)->parname == target) {
 				d.partsz[target]->formatted = true;
-				map<string,string> emptyfiles;
+				map<string,pair<string,permission> > emptyfiles;
 				map<string,fdirnode*> emptydirnode;
 				emptydirnode["."]=d.partsz[target]->proot;
 				emptydirnode[".."]=d.partsz[target]->proot->parent;
@@ -1381,6 +1458,45 @@ int usermon(int argc, vector<string> argv) {
 	}
 } 
 
+int perms(int argc, vector<string> argv) {
+	if (argc < 2) {
+		cout << cdir << "    " << isHavePerm(*(resolve(cdir,root)),curlogin,"") << endl;
+	} else {
+		account curl = curlogin; 
+		string rf = getRealFirst(argv[1]), rl = getRealLast(argv[1]), mask = "/", rll = "", rff = rf;
+		if (isSubdirExistsA(root,rf,rl)) {
+			rll = "";
+			rff = rf + rl;
+		} else if (isFileExistsA(root,rf,rl)) {
+			rll = rl;
+			rff = rf;
+		} else {
+			cout << "File not exist" << endl;
+			return 1;
+		}
+		if (rf == "/") mask = "";
+		if (argc > 2) {
+			if (!ac.count(argv[2])) {
+				cout << "User not exist" << endl;
+				return 2;
+			}
+			if (argc > 3) {
+				if (isNotHavingPermA(root,rff,curlogin,rll,2)) {
+					cout << "perm: Permission denied" << endl;
+					return 3;
+				}
+				SGSetPermissionA(root,rff,rll,atoi(argv[3].c_str()),ac[argv[2]],curlogin);
+				return 0;
+			} else {
+				curl = ac[argv[2]];
+			}
+		}
+		cout << rff << mask << rll << "    ";
+		cout << isHavePerm(*(resolve(rff,root)),curl,rll) << endl;
+	}
+	return 0;
+}
+
 int syncs(int argc, vector<string> argv) {
 	vector<string> vlines;
 	vector<string> vargs;
@@ -1442,7 +1558,7 @@ void syssync() {
 		printf("Configruation directory missing. System cannot continue.\n");
 		sysfail();
 	}
-	_proceedFile(reso,"users.conf",tmp);
+	SGModifyFile(reso,"users.conf",tmp,ac["system"]);
 //	FileA(sysroot,"/etc","users.conf",tmp);
 }
 
@@ -1487,6 +1603,7 @@ void initalize(string fn) {
 	f["user"]=usermon;
 	f["sync"]=syncs;
 	f["blue"]=blue;
+	f["perm"]=perms;
 	d = createDisk(104857600);
 	createPartition(&d,-1,327680);//reserved
 	if (appmode == 0) ac=getAccounts();
@@ -1507,6 +1624,12 @@ void initalize(string fn) {
 	//		cout << tmp << endl;
 		}
 		createFileA(sysroot,"/etc","users.conf",tmp);
+		// protecting account information
+		for (acclist::iterator i = ac.begin(); i != ac.end(); i++) {
+			if (i->first != "system") {
+				SGSetPermissionA(sysroot,"/etc","users.conf",0,i->second,ac["system"]);
+			}
+		}
 		createFolderA(sysroot,"/etc","exec");
 		createFolderA(sysroot,"/","bin");
 		for (funcall::iterator i = f.begin(); i != f.end(); i++) {
@@ -1531,7 +1654,7 @@ void initalize(string fn) {
 	r=getDefaultAppacks();
 }
 
-#define KERNEL_VER "4.2.1.269"
+#define KERNEL_VER "5.0.0.341"
 
 #if defined(__ia64) || defined(__itanium__) || defined(_M_IA64)
 #define SYS_ARCH "IA64"
@@ -1589,6 +1712,7 @@ void login(void) {
 #define SESH_VER "4.2"
 
 vector<string> e_arg; 
+account prevlogin;
 
 int shell(void) {
 	if (appmode == 0) printf("Welcome, %s\n",curlogin.account_name.c_str());
@@ -1606,13 +1730,16 @@ int shell(void) {
 		//fgets(s,2048,stdin);
 		//cmd = s;
 		if (appmode == 0 && cmd=="logout") {
-			elevstack = 0; 
-			return 2;
+			if (elevstack) {
+				printf("logout: Cannot exit shell: using 'exit'\n");
+				continue;
+			} else return 2;
 		}
 		if (appmode == 0 && cmd=="exit") {
 			if (elevstack && appmode == 0) {
 				elevstack--;
-				env_user = curlogin.account_name;
+				curlogin = prevlogin;
+				env_user = curlogin.account_name; 
 				continue;
 			}
 			else return 2;
@@ -1640,6 +1767,8 @@ int shell(void) {
 				} while (1);
 				elevstack = 1;
 				env_user = ac["admin"].account_name;
+				prevlogin = curlogin;
+				curlogin = ac["admin"];
 			} else if (curlogin.account_premission > 0) {
 				printf("Already in administrator\n");
 			} else if (elevstack == 0) {
@@ -1715,11 +1844,15 @@ int reb_initalize(void) {
 
 int main(int argc, char* argv[]) {
 	// debugging management
-	extcall["printf"]="echo";
-	extcall["greet"]="echo hello world";
 	// -end-
 	systartz: clear();
-	printf("Seabird Galactic OS\nVersion %s on %s\n\nLoading ...",KERNEL_VER,SYS_ARCH);
+	ac["system"]=getSystem();
+	printf("Seabird Galactic OS\nVersion %s on %s\n\nLoading ...\n",KERNEL_VER,SYS_ARCH);
+	if (!ac.count("system")) {
+		printf("Cannot start system session. System halted.");
+		sysfail();
+	}
+	curlogin = ac["system"];
 	if (argc >= 2) {
 		string a1;// = "pesetup";
 //	if (true) {
@@ -1737,7 +1870,9 @@ int main(int argc, char* argv[]) {
 			break;
 	}
 	logz: login();
-	switch (shell()) {
+	int she = shell();
+	curlogin = ac["system"];
+	switch (she) {
 		case 0:
 			syssync();
 			return 0;

@@ -32,21 +32,21 @@ CompilerSettings=0000000000000000001000000
 UnitCount=10
 
 [VersionInfo]
-Major=4
-Minor=2
-Release=1
-Build=269
+Major=5
+Minor=0
+Release=0
+Build=341
 LanguageID=1033
 CharsetID=1252
 CompanyName=
-FileVersion=4.2.1.269
+FileVersion=5.0.0.341
 FileDescription=
 InternalName=
 LegalCopyright=
 LegalTrademarks=
 OriginalFilename=
 ProductName=Seabird Galactic Shell
-ProductVersion=4.2.1.269
+ProductVersion=5.0.0.341
 AutoIncBuildNr=1
 SyncProduct=1
 
