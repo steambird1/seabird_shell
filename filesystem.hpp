@@ -26,14 +26,16 @@ using namespace std;
 #define CREATE_PERM 7
 #define DEFAULT_PERM 4
 
+
+
 typedef map<account,int> permission;
 
 struct fdirnode {
 	string this_name;
 	fdirnode *parent;
-	permission dir_perm;
+	map<account,int> dir_perm;
 	map<string,fdirnode*> subdir;
-	map<string,pair<string,permission> > files;
+	map<string,pair<string,map<account,int> > > files;
 	bool delete_symbol;
 	int *_resv_filesize;
 };
@@ -272,15 +274,17 @@ inline int SGProceedFileA(fdirnode *root, const string path, const string file_n
 }
 
 // New Feature: Set Permission (Requires Write)
+// But I can only do like a macro...
+
 int SGSetPermission(fdirnode *father,const string file_name,int perm,account setting,account curlogin) {
 	if (file_name != "" && !isFileExists(file_name,father)) return 0;
-	if (isNotHavingPerm(*father,curlogin,file_name,2)) return 0; // Does not need write now
+	if (isNotHavingPerm(*father,curlogin,file_name,2)) return 0;
 	if (file_name == "") {
 		father->dir_perm[setting]=perm;
-		return father->dir_perm[setting];
+//		return father->dir_perm;
 	} else {
 		father->files[file_name].second[setting]=perm;
-		return father->files[file_name].second[setting];
+//		return father->files[file_name].second;
 	}
 }
 
@@ -421,6 +425,7 @@ inline int SGRmFileA(fdirnode *root,const string path,const string filename,acco
 inline int SGSetPermissionA(fdirnode *root,const string path,const string filename,int perm,account setting,account curlogin) {
 	return SGSetPermission(resolve(path,root),filename,perm,setting,curlogin);
 }
+
 
 // for more
 // they are deprecated by security problem and you should NOT use them anymore.
