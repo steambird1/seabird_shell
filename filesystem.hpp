@@ -426,6 +426,14 @@ inline int SGSetPermissionA(fdirnode *root,const string path,const string filena
 	return SGSetPermission(resolve(path,root),filename,perm,setting,curlogin);
 }
 
+inline int isHavePermA(fdirnode *root,const string path,account query,const string filename) {
+	return isHavePerm(*resolve(path,root),query,filename);
+}
+
+inline int isNotHavingPermA(fdirnode *root,const string path,account query,const string filename,int perm) {
+	return isNotHavingPerm(*resolve(path,root),query,filename,perm); 
+}
+
 
 // for more
 // they are deprecated by security problem and you should NOT use them anymore.

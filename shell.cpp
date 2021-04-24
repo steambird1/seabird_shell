@@ -1385,17 +1385,39 @@ int perms(int argc, vector<string> argv) {
 	if (argc < 2) {
 		cout << cdir << "    " << isHavePerm(*(resolve(cdir,root)),curlogin,"") << endl;
 	} else {
-		string rf = getRealFirst(argv[1]), rl = getRealLast(argv[1]);
-		cout << rf << "/" << rl << "    ";
+		account curl = curlogin; 
+		string rf = getRealFirst(argv[1]), rl = getRealLast(argv[1]), mask = "/", rll = "", rff = rf;
 		if (isSubdirExistsA(root,rf,rl)) {
-			cout << isHavePerm(*(resolve(cdir,root)),curlogin,"") << endl;
+			rll = "";
+			rff = rf + rl;
 		} else if (isFileExistsA(root,rf,rl)) {
-			cout << isHavePerm(*(resolve(cdir,root)),curlogin,rl) << endl;
+			rll = rl;
+			rff = rf;
 		} else {
 			cout << "File not exist" << endl;
 			return 1;
 		}
+		if (rf == "/") mask = "";
+		if (argc > 2) {
+			if (!ac.count(argv[2])) {
+				cout << "User not exist" << endl;
+				return 2;
+			}
+			if (argc > 3) {
+				if (isNotHavingPermA(root,rff,curlogin,rll,2)) {
+					cout << "perm: Permission denied" << endl;
+					return 3;
+				}
+				SGSetPermissionA(root,rff,rll,atoi(argv[3].c_str()),ac[argv[2]],curlogin);
+				return 0;
+			} else {
+				curl = ac[argv[2]];
+			}
+		}
+		cout << rff << mask << rll << "    ";
+		cout << isHavePerm(*(resolve(rff,root)),curl,rll) << endl;
 	}
+	return 0;
 }
 
 int syncs(int argc, vector<string> argv) {
@@ -1549,7 +1571,7 @@ void initalize(string fn) {
 	r=getDefaultAppacks();
 }
 
-#define KERNEL_VER "5.0.0.326 Alpha"
+#define KERNEL_VER "5.0.0.336 Alpha"
 
 #if defined(__ia64) || defined(__itanium__) || defined(_M_IA64)
 #define SYS_ARCH "IA64"
