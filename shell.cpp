@@ -23,6 +23,7 @@ using namespace std;
 #define PE_SETUP_APP 2
 
 int appmode = 0;  // usually it should be NORMAL_APP (0).
+int reapp = 0; // rebooting application mode
 
 // Updated. recompile required ... 
 // declare,
@@ -432,6 +433,10 @@ void runfile(fdirnode *root,string cdr,string fn) {
 void execute_command(string cmd) {
 	vector<string> v;
 		v = split_arg(cmd,true);
+		if (f.count(v[0]) && isNotHavingPermA(sysroot,"/bin",curlogin,v[0],5)) {
+		cout << v[0] << ": Operation cancelled because of adminstrative settings" << endl;
+		return;
+	}
 		errval = call_cmd(f,v);
 		if (errval == -1) {
 			if (extcall.count(v[0])) {
@@ -447,12 +452,17 @@ void execute_command(string cmd) {
 				lsbin = listFileA(sysroot,"/sbin",2);
 				for (vector<string>::iterator i = lbin.begin(); i != lbin.end(); i++) {
 					if (getExt(*i,true)=="run" && getName(*i,true)==v[0]) {
+						if (isNotHavingPermA(sysroot,"/bin",curlogin,*i,5)) {
+							cout << v[0] << ": Operation cancelled because of adminstrative settings" << endl;
+							return;
+						} 
 						runfile(sysroot,"/bin",*i);
 						return;
 					}
 				}
 				for (vector<string>::iterator i = lsbin.begin(); i != lsbin.end(); i++) {
 					if (getExt(*i,true)=="run" && getName(*i,true)==v[0]) {
+						// administrator didn't need this!
 						if (elevstack || curlogin.account_premission) {
 							runfile(sysroot,"/bin",*i);
 							return;
@@ -712,18 +722,15 @@ int svt(int argc, vector<string> argv) {
 	// svt save [local disk file] (save current root)
 	// svt load [local disk file] (to a new partition)
 	// Use quotes for long path.
-	
+	if (curlogin.account_premission < 1) {
+			cout << "Permission denied: Requires elevated permission." << endl;
+			return 55;
+		}
 	if (argc < 3) {
 		cout << "Required parameter missing" << endl;
 		return 1;
 	}
 	// load or save requires admin.
-	if (argv[1]=="load" || argv[1]=="save") {
-		if (curlogin.account_premission < 1) {
-			cout << "svt: Permission denied" << endl;
-			return 5;
-		}
-	}
 	if (argv[1]=="import") {
 		if (argc < 4) {
 		cout << "Required parameter missing" << endl;
@@ -1633,10 +1640,18 @@ void initalize(string fn) {
 		createFolderA(sysroot,"/etc","exec");
 		createFolderA(sysroot,"/","bin");
 		for (funcall::iterator i = f.begin(); i != f.end(); i++) {
+			if (i->first=="svt") continue; // listing superuser commands
 			createFileA(sysroot,"/bin",i->first,"");
+			for (acclist::iterator j = ac.begin(); j != ac.end(); j++) {
+				if (j->first != "system")
+					SGSetPermissionA(sysroot,"/bin",i->first,5,j->second,ac["system"]);
+			}
 		}
 		createFolderA(sysroot,"/","sbin");
 		createFileA(sysroot,"/sbin","elev","");
+		createFileA(sysroot,"/sbin","svt","");
+		createFileA(sysroot,"/sbin","halt","");
+		createFileA(sysroot,"/sbin","reboot","");
 		createFolderA(sysroot,"/","tmp");
 		createFolderA(sysroot,"/","var");
 		createFolderA(sysroot,"/var","tmp");
@@ -1654,7 +1669,7 @@ void initalize(string fn) {
 	r=getDefaultAppacks();
 }
 
-#define KERNEL_VER "5.0.0.341"
+#define KERNEL_VER "5.0.1.351"
 
 #if defined(__ia64) || defined(__itanium__) || defined(_M_IA64)
 #define SYS_ARCH "IA64"
@@ -1709,7 +1724,7 @@ void login(void) {
 
 //char s[2049];
 
-#define SESH_VER "4.2"
+#define SESH_VER "5.0"
 
 vector<string> e_arg; 
 account prevlogin;
@@ -1842,27 +1857,61 @@ int reb_initalize(void) {
 	return 0;
 }
 
+vector<menuitem> e_v;
+
 int main(int argc, char* argv[]) {
 	// debugging management
 	// -end-
+	string a1 = "";
+	if (argc >= 2) a1 = argv[1];
 	systartz: clear();
 	ac["system"]=getSystem();
-	printf("Seabird Galactic OS\nVersion %s on %s\n\nLoading ...\n",KERNEL_VER,SYS_ARCH);
+	printf("Seabird Galactic OS\nVersion %s on %s\n\nLoading ... Press any key for advanced options.\n",KERNEL_VER,SYS_ARCH);
 	if (!ac.count("system")) {
 		printf("Cannot start system session. System halted.");
 		sysfail();
 	}
 	curlogin = ac["system"];
-	if (argc >= 2) {
-		string a1;// = "pesetup";
+	// 3 seconds to choose boot mode
+	for (int i = 0; i < 3000; i++) {
+		if (kbhit()) {
+			switch (displayMenuItem(e_v<<"Normal booting"<<"PE environment"<<"PE Setup environment"<<"User startup disk"<<"Safe boot", \
+			"0B","0F","0C", \
+			"Seabird Galactic OS\nPlease select startup option:\n")) {
+				case 0:
+					// just normal booting
+					break;
+				case 1:
+					a1 = "pe";
+					break;
+				case 2:
+					a1 = "pesetup";
+					break;
+				case 3:
+					cout << "Input startup disk: ";
+					getline(cin,a1);
+					break;
+				case 4:
+					a1 = "";
+					break;
+			}
+			break;
+		}
+		Sleep(1);
+	}
+	clear();
+	printf("Seabird Galactic OS\nVersion %s on %s\n\nLoading ...\n",KERNEL_VER,SYS_ARCH);
+	winitz: if (a1 != "") {
+	//	string a1;// = "pesetup";
 //	if (true) {
 //		string a1 = argv[1];
-		initalize(argv[1]);
+		initalize(a1);
 	} else {
 //		appmode = 1;
 		initalize("");
 	}
 	// Initalize only do once in setup
+	a1 = ""; // clear arguments
 	initz: switch (reb_initalize()) {
 		case 1:
 			goto systartz;
@@ -1880,7 +1929,35 @@ int main(int argc, char* argv[]) {
 		case 1: case 3:
 			appmode = 0; // rebooting resets appmode.
 			syssync();
-			goto initz;
+			clear();
+			printf("Seabird Galactic OS\nVersion %s on %s\n\nLoading ... Press any key for advanced options.\n",KERNEL_VER,SYS_ARCH);
+			for (int i = 0; i < 3000; i++) {
+		if (kbhit()) {
+			switch (displayMenuItem(e_v<<"Normal booting"<<"PE environment"<<"PE Setup environment"<<"User startup disk"<<"Safe boot", \
+			"0B","0F","0C", \
+			"Seabird Galactic OS\nPlease select startup option:\n")) {
+				case 0:
+					goto initz;
+					break;
+				case 1:
+					a1 = "pe";
+					break;
+				case 2:
+					a1 = "pesetup";
+					break;
+				case 3:
+					cout << "Input startup disk: ";
+					getline(cin,a1);
+					break;
+				case 4:
+					a1 = "";
+					break;
+			}
+			break;
+		}
+		Sleep(1);
+	}
+			goto winitz;
 			break;
 		case 2:
 			goto logz;
